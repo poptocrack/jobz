@@ -25,7 +25,7 @@ const fmtK = (v) => `${Math.round(v / 1000)} k€`;
 async function fetchJson(name) {
   for (const base of ["data/", "../data/"]) {
     try {
-      const resp = await fetch(new URL(base + name, location.href));
+      const resp = await fetch(new URL(base + name, location.href), { cache: "no-cache" });
       if (resp.ok) return await resp.json();
     } catch { /* base suivante */ }
   }

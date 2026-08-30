@@ -6,7 +6,9 @@ const DATA_BASES = ["data/", "../data/"];
 async function resolveBase() {
   for (const base of DATA_BASES) {
     try {
-      const resp = await fetch(new URL(base + "manifest.json", location.href));
+      // no-cache : revalidation systématique (304 si inchangé), pour que
+      // chaque déploiement soit visible immédiatement.
+      const resp = await fetch(new URL(base + "manifest.json", location.href), { cache: "no-cache" });
       if (resp.ok) return { base, manifest: await resp.json() };
     } catch { /* base suivante */ }
   }
@@ -15,8 +17,10 @@ async function resolveBase() {
 
 export async function loadJobs(onProgress) {
   const { base, manifest } = await resolveBase();
+  // Les chunks portent la version du build : jamais de données périmées en cache.
+  const version = encodeURIComponent(manifest.generated_at || "");
   const urls = manifest.chunks.map(
-    (c) => new URL(base + c.file, location.href).href
+    (c) => new URL(base + c.file + "?v=" + version, location.href).href
   );
 
   const jobs = await new Promise((resolve, reject) => {

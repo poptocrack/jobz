@@ -345,6 +345,8 @@ body {
   white-space: nowrap;
 }
 .badge.contrat { background: var(--ok-soft); color: var(--ok); }
+.badge.final { background: var(--ok-soft); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+.badge.esn { background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border); }
 .badge.salaire { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
 .badge.new { background: var(--accent); color: #fff; }
 .badge.tag { background: var(--muted); color: var(--muted-foreground); }

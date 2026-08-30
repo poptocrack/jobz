@@ -6,6 +6,7 @@ export const defaultFilters = () => ({
   exclude: "",
   contrats: [],
   remote: "",
+  employeur: "",
   region: "",
   source: "",
   salaireMin: 0, // en k€
@@ -48,6 +49,7 @@ export function applyFilters(jobs, filters) {
     if (excludeTerms.length && excludeTerms.some((t) => job._search.includes(t))) return false;
     if (filters.contrats.length && !filters.contrats.includes(job.contrat)) return false;
     if (filters.remote && job.teletravail !== filters.remote) return false;
+    if (filters.employeur && (job.employeur_type || "inconnu") !== filters.employeur) return false;
     if (filters.region && job.region !== filters.region) return false;
     if (filters.source && sourceGroup(job.source) !== filters.source) return false;
     if (salaireMin && (job.salaire_max ?? job.salaire_min ?? 0) < salaireMin) return false;

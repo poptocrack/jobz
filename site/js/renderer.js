@@ -50,6 +50,8 @@ function jobCard(job) {
 
   const badges = [
     isNew(job) ? `<span class="badge new">Nouvelle</span>` : "",
+    job.employeur_type === "client final" ? `<span class="badge final">Client final</span>` : "",
+    job.employeur_type === "esn" ? `<span class="badge esn">ESN / conseil</span>` : "",
     job.contrat ? `<span class="badge contrat">${escapeHtml(job.contrat)}</span>` : "",
     job.teletravail === "total" ? `<span class="badge">Full remote</span>` : "",
     job.teletravail === "hybride" ? `<span class="badge">Hybride</span>` : "",

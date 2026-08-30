@@ -169,6 +169,26 @@ def extract_tags(text: str) -> list[str]:
     return found[:12]
 
 
+# Signaux textuels d'une offre postée par un prestataire (ESN, cabinet, intérim).
+_ESN_SIGNALS = re.compile(
+    r"pour (le compte d[e'] ?)?(notre|nos|l[e']un de nos) clients?"
+    r"|chez (notre|nos|l[e']un de nos) clients?"
+    r"|aupres de (notre|nos) clients?"
+    r"|\ben regie\b"
+    r"|cabinet de (recrutement|conseil)"
+    r"|societe de conseil"
+    r"|\besn\b|\bssii\b"
+    r"|agence (d[e'] ?interim|de travail temporaire)"
+    r"|vous interviendrez (chez|aupres)"
+    r"|nos consultants intervienn",
+)
+
+
+def detect_esn_signals(text: str) -> bool:
+    """Le texte (titre + description) trahit-il une offre de prestataire ?"""
+    return bool(_ESN_SIGNALS.search(strip_accents((text or "").lower())))
+
+
 def make_job(
     *,
     source: str,
@@ -187,9 +207,17 @@ def make_job(
     salaire_max: int | None = None,
     date_publication: str = "",
     description: str = "",
+    employeur_type: str = "",
 ) -> dict:
-    """Construit une offre au schéma canonique. `description` sert uniquement aux tags."""
+    """Construit une offre au schéma canonique.
+
+    `description` sert aux tags et à la détection de signaux ESN.
+    `employeur_type` : "esn" | "client final" | "" ; si vide, les signaux
+    textuels peuvent le passer à "esn" (jamais à "client final").
+    """
     titre = re.sub(r"\s+", " ", titre or "").strip()
+    if not employeur_type and detect_esn_signals(f"{titre}\n{description[:4000]}"):
+        employeur_type = "esn"
     return {
         "id": stable_id(source, ref),
         "titre": titre,
@@ -207,4 +235,5 @@ def make_job(
         "source": source,
         "url": url,
         "tags": extract_tags(f"{titre}\n{description[:4000]}"),
+        "employeur_type": employeur_type,
     }

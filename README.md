@@ -21,6 +21,11 @@ Le pipeline dédoublonne les offres présentes sur plusieurs canaux (priorité a
 de l'entreprise), normalise contrat / télétravail / salaire, et géocode les villes via
 l'API Adresse (data.gouv.fr).
 
+Chaque offre est aussi classée **client final** vs **ESN / conseil / intérim** (champ
+`employeur_type`) en croisant trois signaux : liste des prestataires connus (`scripts/esn.py`),
+secteur WTTJ de l'entreprise, et signaux textuels dans les descriptions ("pour notre client",
+"en régie"...). Les offres sans signal restent "non déterminé" plutôt que d'être mal classées.
+
 ## Lancer en local
 
 ```bash

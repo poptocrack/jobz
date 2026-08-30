@@ -40,8 +40,12 @@ ATTRIBUTES = [
     "name", "reference", "slug", "organization.name", "organization.slug",
     "offices", "_geoloc", "remote", "contract_type", "published_at_date",
     "salary_minimum", "salary_maximum", "salary_currency", "salary_period",
-    "new_profession", "summary",
+    "new_profession", "summary", "sectors",
 ]
+
+# Secteurs WTTJ signant une société de conseil / prestation.
+_CONSEIL_PARENTS = {"consulting-audit"}
+_CONSEIL_REFS = {"it-digital-1", "recruitment-1", "interim"}
 
 _REMOTE_MAP = {"fulltime": "total", "partial": "hybride", "punctual": "hybride", "no": "sur site"}
 
@@ -109,6 +113,13 @@ def _convert(hit: dict) -> dict | None:
     sal_min, sal_max = _annual_salary(hit)
     url = f"https://www.welcometothejungle.com/fr/companies/{org['slug']}/jobs/{hit.get('slug', '')}"
 
+    sectors = hit.get("sectors") or []
+    employeur_type = ""
+    if any(s.get("parent_reference") in _CONSEIL_PARENTS or s.get("reference") in _CONSEIL_REFS for s in sectors):
+        employeur_type = "esn"
+    elif sectors:
+        employeur_type = "client final"
+
     return make_job(
         source="wttj",
         ref=str(hit.get("reference") or hit.get("objectID", "")),
@@ -127,6 +138,7 @@ def _convert(hit: dict) -> dict | None:
         salaire_max=sal_max,
         date_publication=hit.get("published_at_date", ""),
         description=hit.get("summary") or "",
+        employeur_type=employeur_type,
     )
 
 

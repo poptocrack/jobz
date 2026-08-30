@@ -48,8 +48,8 @@ function activeFilterCount() {
   const f = state.filters;
   return (
     (f.exclude ? 1 : 0) + f.contrats.length + (f.remote ? 1 : 0) +
-    (f.region ? 1 : 0) + (f.source ? 1 : 0) + (f.salaireMin ? 1 : 0) +
-    (f.suiviesSeules ? 1 : 0)
+    (f.employeur ? 1 : 0) + (f.region ? 1 : 0) + (f.source ? 1 : 0) +
+    (f.salaireMin ? 1 : 0) + (f.suiviesSeules ? 1 : 0)
   );
 }
 
@@ -108,6 +108,7 @@ function syncControls() {
   $("search-input").value = f.q;
   $("exclude-input").value = f.exclude;
   $("remote-select").value = f.remote;
+  $("employer-select").value = f.employeur;
   $("region-select").value = f.region;
   $("source-select").value = f.source;
   $("salary-input").value = f.salaireMin || "";
@@ -147,6 +148,7 @@ function wireControls() {
       render();
     });
   bindSelect("remote-select", "remote");
+  bindSelect("employer-select", "employeur");
   bindSelect("region-select", "region");
   bindSelect("source-select", "source");
   bindSelect("sort-select", "sort");

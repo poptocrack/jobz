@@ -17,7 +17,8 @@ from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from scripts.dedupe import dedupe
+from scripts.dedupe import SOURCE_PRIORITY, dedupe
+from scripts.esn import is_esn_name
 from scripts.geo import enrich_geo
 from scripts.sources.adzuna import fetch_adzuna
 from scripts.sources.ats import fetch_all_ats
@@ -64,12 +65,25 @@ def prune(jobs: list[dict], max_age_days: int) -> list[dict]:
     return kept
 
 
+def classify_employers(jobs: list[dict]) -> None:
+    """Passe finale employeur_type : la liste des prestataires connus prime,
+    et une offre issue de l'ATS d'une entreprise du seed est un client final."""
+    for job in jobs:
+        if is_esn_name(job["entreprise"]):
+            job["employeur_type"] = "esn"
+        elif not job["employeur_type"] and SOURCE_PRIORITY.get(job["source"]) == 0:
+            job["employeur_type"] = "client final"
+    counts = Counter(j["employeur_type"] or "inconnu" for j in jobs)
+    print(f"Employeurs : {dict(counts.most_common())}", file=sys.stderr)
+
+
 def build_stats(jobs: list[dict], errors: dict) -> dict:
     return {
         "par_source": dict(Counter(j["source"] for j in jobs).most_common()),
         "par_contrat": dict(Counter(j["contrat"] or "Non précisé" for j in jobs).most_common()),
         "par_region": dict(Counter(j["region"] or "Non précisée" for j in jobs).most_common()),
         "par_teletravail": dict(Counter(j["teletravail"] or "inconnu" for j in jobs).most_common()),
+        "par_employeur": dict(Counter(j["employeur_type"] or "inconnu" for j in jobs).most_common()),
         "top_entreprises": dict(Counter(j["entreprise"] for j in jobs if j["entreprise"]).most_common(20)),
         "avec_salaire": sum(1 for j in jobs if j["salaire_min"] is not None),
         "erreurs_ats": errors,
@@ -110,6 +124,7 @@ def main() -> None:
     jobs, errors = collect(skip)
     jobs = prune(jobs, args.max_age_days)
     jobs = dedupe(jobs)
+    classify_employers(jobs)
     enrich_geo(jobs)
     write_output(jobs, Path(args.out), errors)
 

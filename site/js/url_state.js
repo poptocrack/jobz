@@ -5,6 +5,7 @@ const PARAM_MAP = {
   q: "q",
   exclude: "excl",
   remote: "tt",
+  employeur: "emp",
   region: "region",
   source: "src",
   sort: "tri",

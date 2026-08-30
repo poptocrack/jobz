@@ -145,6 +145,9 @@ def _convert(raw: dict) -> dict:
     if raw.get("alternance"):
         contrat = "Alternance"
 
+    # Une mission d'intérim est par construction postée par une agence.
+    employeur_type = "esn" if raw.get("typeContrat") == "MIS" else ""
+
     entreprise = (raw.get("entreprise") or {}).get("nom", "") or "Employeur confidentiel"
     url = (raw.get("origineOffre") or {}).get("urlOrigine", "") or (
         f"https://candidat.francetravail.fr/offres/recherche/detail/{raw.get('id', '')}"
@@ -166,6 +169,7 @@ def _convert(raw: dict) -> dict:
         salaire_max=sal_max,
         date_publication=(raw.get("dateCreation") or "")[:10],
         description=(raw.get("description") or "")[:4000],
+        employeur_type=employeur_type,
     )
 
 

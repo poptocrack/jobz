@@ -58,7 +58,7 @@ jobs:
         run: |
           mkdir -p _site/data
           cp -r site/* _site/
-          cp data/manifest.json data/*.json.gz _site/data/
+          cp data/manifest.json data/analytics.json data/history.json data/*.json.gz _site/data/
 
       - uses: actions/upload-pages-artifact@v3
         with:

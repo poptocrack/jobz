@@ -17,6 +17,7 @@ from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from scripts.analytics import write_analytics
 from scripts.dedupe import SOURCE_PRIORITY, dedupe
 from scripts.esn import is_esn_name
 from scripts.geo import enrich_geo
@@ -45,7 +46,7 @@ def collect(skip: set[str]) -> tuple[list[dict], dict]:
         ats_jobs, ats_errors = fetch_all_ats(load_companies())
         print(f"ATS : {len(ats_jobs)} offres, {len(ats_errors)} entreprises en erreur", file=sys.stderr)
         jobs.extend(ats_jobs)
-        errors.update(ats_errors)
+        errors["ats"] = ats_errors
     if "france_travail" not in skip:
         jobs.extend(fetch_france_travail())
     if "wttj" not in skip:
@@ -86,7 +87,8 @@ def build_stats(jobs: list[dict], errors: dict) -> dict:
         "par_employeur": dict(Counter(j["employeur_type"] or "inconnu" for j in jobs).most_common()),
         "top_entreprises": dict(Counter(j["entreprise"] for j in jobs if j["entreprise"]).most_common(20)),
         "avec_salaire": sum(1 for j in jobs if j["salaire_min"] is not None),
-        "erreurs_ats": errors,
+        "erreurs_ats": errors.get("ats", {}),
+        "doublons_par_paire": dict(sorted(errors.get("doublons", {}).items(), key=lambda x: -x[1])),
     }
 
 
@@ -123,10 +125,15 @@ def main() -> None:
     skip = {s.strip() for s in args.skip_sources.split(",") if s.strip()}
     jobs, errors = collect(skip)
     jobs = prune(jobs, args.max_age_days)
-    jobs = dedupe(jobs)
+    pair_stats: dict = {}
+    jobs = dedupe(jobs, pair_stats)
+    if pair_stats:
+        print(f"Doublons par paire : {dict(sorted(pair_stats.items(), key=lambda x: -x[1]))}", file=sys.stderr)
+    errors["doublons"] = pair_stats
     classify_employers(jobs)
     enrich_geo(jobs)
     write_output(jobs, Path(args.out), errors)
+    write_analytics(jobs, Path(args.out))
 
 
 if __name__ == "__main__":

@@ -44,8 +44,12 @@ ATTRIBUTES = [
 ]
 
 # Secteurs WTTJ signant une société de conseil / prestation.
+# "it-digital-1" (IT / Digital) a pour parent consulting-audit mais est un tag
+# générique que cochent aussi des clients finaux : il ne compte pas seul.
 _CONSEIL_PARENTS = {"consulting-audit"}
-_CONSEIL_REFS = {"it-digital-1", "recruitment-1", "interim"}
+_CONSEIL_REFS = {"recruitment-1", "interim"}
+_GENERIC_REFS = {"it-digital-1"}
+_PUBLIC_PARENTS = {"public-administration-1"}
 
 _REMOTE_MAP = {"fulltime": "total", "partial": "hybride", "punctual": "hybride", "no": "sur site"}
 
@@ -79,20 +83,25 @@ class _WttjClient:
         return resp.json()
 
 
-def _annual_salary(hit: dict) -> tuple[int | None, int | None]:
+def _salary(hit: dict) -> dict:
+    """Salaire annuel + TJM éventuel (period 'daily') depuis les champs structurés WTTJ."""
+    out = {"annual_min": None, "annual_max": None, "tjm_min": None, "tjm_max": None}
     if hit.get("salary_currency") not in (None, "", "EUR"):
-        return None, None
+        return out
     period = hit.get("salary_period") or "yearly"
     factor = {"yearly": 1, "monthly": 12, "daily": 218, "hourly": 1607}.get(period, 1)
-    out = []
-    for key in ("salary_minimum", "salary_maximum"):
+    for key, ann_key, tjm_key in (
+        ("salary_minimum", "annual_min", "tjm_min"),
+        ("salary_maximum", "annual_max", "tjm_max"),
+    ):
         value = hit.get(key)
         if isinstance(value, (int, float)) and value > 0:
             annual = int(value * factor)
-            out.append(annual if 8000 <= annual <= 600000 else None)
-        else:
-            out.append(None)
-    return out[0], out[1]
+            if 8000 <= annual <= 600000:
+                out[ann_key] = annual
+            if period == "daily" and 100 <= value <= 3000:
+                out[tjm_key] = int(value)
+    return out
 
 
 def _convert(hit: dict) -> dict | None:
@@ -110,12 +119,20 @@ def _convert(hit: dict) -> dict | None:
     if not hit.get("name") or not org.get("slug"):
         return None
 
-    sal_min, sal_max = _annual_salary(hit)
+    salaire = _salary(hit)
     url = f"https://www.welcometothejungle.com/fr/companies/{org['slug']}/jobs/{hit.get('slug', '')}"
 
     sectors = hit.get("sectors") or []
     employeur_type = ""
-    if any(s.get("parent_reference") in _CONSEIL_PARENTS or s.get("reference") in _CONSEIL_REFS for s in sectors):
+    is_public = any(s.get("parent_reference") in _PUBLIC_PARENTS for s in sectors)
+    is_conseil = any(
+        (s.get("parent_reference") in _CONSEIL_PARENTS and s.get("reference") not in _GENERIC_REFS)
+        or s.get("reference") in _CONSEIL_REFS
+        for s in sectors
+    )
+    if is_public:
+        employeur_type = "client final"
+    elif is_conseil:
         employeur_type = "esn"
     elif sectors:
         employeur_type = "client final"
@@ -134,8 +151,10 @@ def _convert(hit: dict) -> dict | None:
         lon=geoloc.get("lng"),
         contrat=normalize_contract(hit.get("contract_type", "")),
         teletravail=_REMOTE_MAP.get(hit.get("remote", ""), ""),
-        salaire_min=sal_min,
-        salaire_max=sal_max,
+        salaire_min=salaire["annual_min"],
+        salaire_max=salaire["annual_max"],
+        tjm_min=salaire["tjm_min"],
+        tjm_max=salaire["tjm_max"],
         date_publication=hit.get("published_at_date", ""),
         description=hit.get("summary") or "",
         employeur_type=employeur_type,

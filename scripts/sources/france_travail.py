@@ -19,7 +19,7 @@ import time
 import requests
 
 from scripts.http_util import make_session
-from scripts.normalize import make_job, normalize_contract, normalize_remote, parse_salary
+from scripts.normalize import make_job, normalize_contract, normalize_remote, parse_salary_details
 
 TOKEN_URL = "https://entreprise.francetravail.fr/connexion/oauth2/access_token"
 SEARCH_URL = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search"
@@ -137,7 +137,7 @@ def _convert(raw: dict) -> dict:
     ville = (lieu.get("libelle") or "").split(" - ")[-1].strip()
 
     salaire_txt = (raw.get("salaire") or {}).get("libelle", "")
-    sal_min, sal_max = parse_salary(salaire_txt)
+    salaire = parse_salary_details(salaire_txt)
 
     contrat = normalize_contract(
         " ".join(filter(None, [raw.get("typeContrat", ""), raw.get("natureContrat", ""), raw.get("typeContratLibelle", "")]))
@@ -165,8 +165,10 @@ def _convert(raw: dict) -> dict:
         lon=lieu.get("longitude"),
         contrat=contrat,
         teletravail=normalize_remote(raw.get("intitule", "") + " " + (raw.get("description") or "")[:500]),
-        salaire_min=sal_min,
-        salaire_max=sal_max,
+        salaire_min=salaire["annual_min"],
+        salaire_max=salaire["annual_max"],
+        tjm_min=salaire["tjm_min"],
+        tjm_max=salaire["tjm_max"],
         date_publication=(raw.get("dateCreation") or "")[:10],
         description=(raw.get("description") or "")[:4000],
         employeur_type=employeur_type,

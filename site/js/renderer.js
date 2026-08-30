@@ -19,6 +19,12 @@ const escapeHtml = (s) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 function formatSalary(job) {
+  // Un TJM affiché prime sur l'annualisation pour les offres freelance/intérim.
+  if (job.tjm_min || job.tjm_max) {
+    const lo = job.tjm_min, hi = job.tjm_max;
+    if (lo && hi && lo !== hi) return `${lo}–${hi} €/j`;
+    return `${lo ?? hi} €/j`;
+  }
   const fmt = (v) => Math.round(v / 1000);
   if (job.salaire_min && job.salaire_max && job.salaire_min !== job.salaire_max)
     return `${fmt(job.salaire_min)}–${fmt(job.salaire_max)} k€`;

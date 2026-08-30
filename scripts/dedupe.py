@@ -40,7 +40,7 @@ def _company_key(entreprise: str) -> str:
 
 
 def _fill_missing(winner: dict, loser: dict) -> None:
-    for field in ("salaire_min", "salaire_max", "lat", "lon"):
+    for field in ("salaire_min", "salaire_max", "tjm_min", "tjm_max", "lat", "lon"):
         if winner[field] is None and loser[field] is not None:
             winner[field] = loser[field]
     for field in ("contrat", "teletravail", "ville", "departement", "region", "date_publication"):
@@ -51,7 +51,9 @@ def _fill_missing(winner: dict, loser: dict) -> None:
             winner["tags"].append(tag)
 
 
-def dedupe(jobs: list[dict]) -> list[dict]:
+def dedupe(jobs: list[dict], pair_stats: dict | None = None) -> list[dict]:
+    """Dédoublonne. Si pair_stats est fourni, y compte les fusions par paire
+    "source_gardée < source_écartée"."""
     best: dict[tuple, dict] = {}
     for job in jobs:
         company_key = _company_key(job["entreprise"])
@@ -65,10 +67,15 @@ def dedupe(jobs: list[dict]) -> list[dict]:
             prio_new = SOURCE_PRIORITY.get(job["source"], 9)
             prio_cur = SOURCE_PRIORITY.get(current["source"], 9)
             if prio_new < prio_cur:
+                winner, loser = job, current
                 _fill_missing(job, current)
                 best[key] = job
             else:
+                winner, loser = current, job
                 _fill_missing(current, job)
+            if pair_stats is not None:
+                pair = f"{winner['source']} < {loser['source']}"
+                pair_stats[pair] = pair_stats.get(pair, 0) + 1
 
     result = list(best.values())
     removed = len(jobs) - len(result)

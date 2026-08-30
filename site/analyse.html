@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analyse — jobz</title>
+  <meta name="description" content="Analyse du marché de l'emploi tech en France : technos les plus demandées, salaires par techno et par contrat, TJM freelance, géographie.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇫🇷</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">jz</span>
+        <div>
+          <h1>jobz</h1>
+          <span class="tagline">l'emploi tech en France</span>
+        </div>
+      </div>
+      <nav class="site-nav" aria-label="Navigation">
+        <a href="./">Offres</a>
+        <a href="analyse.html" class="active" aria-current="page">Analyse</a>
+      </nav>
+      <div class="meta" id="meta-info" aria-live="polite">Chargement…</div>
+    </div>
+  </header>
+
+  <main class="analytics">
+    <section class="kpi-row" id="kpi-row" aria-label="Chiffres clés"></section>
+
+    <section class="charts-grid">
+      <article class="chart-card wide">
+        <h3>Technos les plus demandées</h3>
+        <p class="chart-note">Détectées dans les intitulés et descriptions des offres.</p>
+        <div class="chart-wrap" id="wrap-technos"><canvas id="chart-technos"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-technos"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Salaire médian par techno (CDI)</h3>
+        <p class="chart-note" id="note-salaires-techno">Offres CDI avec fourchette affichée uniquement.</p>
+        <div class="chart-wrap" id="wrap-salaires-techno"><canvas id="chart-salaires-techno"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-salaires-techno"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Distribution des salaires CDI</h3>
+        <p class="chart-note">Milieu de fourchette, en k€ brut/an.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-distribution"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-distribution"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Salaire médian par contrat</h3>
+        <p class="chart-note">Médiane et écart interquartile (Q1–Q3), en k€ brut/an.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-contrats"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-contrats"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>TJM freelance</h3>
+        <p class="chart-note" id="note-tjm">Taux journaliers affichés dans les offres freelance.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-tjm"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-tjm"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Offres par région</h3>
+        <div class="chart-wrap" id="wrap-regions"><canvas id="chart-regions"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-regions"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Publications par jour</h3>
+        <p class="chart-note">30 derniers jours, toutes sources.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-publications"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-publications"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Transparence salariale</h3>
+        <p class="chart-note">Part des offres affichant un salaire, par type d'employeur.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-transparence"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-transparence"></div></details>
+      </article>
+
+      <article class="chart-card" id="card-history" hidden>
+        <h3>Évolution du volume d'offres</h3>
+        <p class="chart-note">Un point par jour de collecte.</p>
+        <div class="chart-wrap fixed"><canvas id="chart-history"></canvas></div>
+        <details class="table-view"><summary>Voir en tableau</summary><div id="table-history"></div></details>
+      </article>
+
+      <article class="chart-card">
+        <h3>Top recruteurs — clients finaux</h3>
+        <div id="list-clients-finaux" class="recruiter-list"></div>
+      </article>
+
+      <article class="chart-card">
+        <h3>Top recruteurs — ESN &amp; conseil</h3>
+        <div id="list-esn" class="recruiter-list"></div>
+      </article>
+    </section>
+
+    <footer>
+      <p>Agrégats recalculés à chaque collecte (deux fois par jour). Les salaires reposent uniquement
+      sur les offres qui les affichent : ils sont donc biaisés vers les employeurs transparents.</p>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module" src="js/analytics_page.js"></script>
+</body>
+</html>

@@ -53,7 +53,7 @@ _TAGS = [
     "postgresql", "postgres", "mysql", "mongodb", "redis", "elasticsearch", "kafka",
     "spark", "airflow", "dbt", "snowflake", "bigquery",
     "machine learning", "deep learning", "data science", "nlp", "llm",
-    "devops", "sre", "cybersécurité", "sécurité", "blockchain",
+    "devops", "sre", "cybersécurité", "blockchain",
     "product manager", "product owner", "scrum", "agile", "ux", "ui",
     "qa", "test automation", "embedded", "embarqué", "sap", "salesforce",
 ]
@@ -126,13 +126,17 @@ def _to_annual_eur(value: float, unit_hint: str, k_flag: bool) -> int | None:
     return int(round(value / 100.0) * 100)
 
 
-def parse_salary(raw: str) -> tuple[int | None, int | None]:
-    """Extrait (min, max) en EUR brut annuel depuis un libellé libre.
+def parse_salary_details(raw: str) -> dict:
+    """Extrait un salaire depuis un libellé libre.
 
+    Retourne {"annual_min", "annual_max", "tjm_min", "tjm_max"} (None si absents).
+    Un taux journalier ("TJM 500 €/jour") est conservé tel quel en tjm_* ET
+    annualisé (×218) en annual_* pour les tris/filtres.
     Gère "45-55k€", "45 000 - 55 000 € / an", "2500 € par mois", "TJM 500€/jour".
     """
+    out = {"annual_min": None, "annual_max": None, "tjm_min": None, "tjm_max": None}
     if not raw:
-        return None, None
+        return out
     low = strip_accents(raw.lower())
     low = _RANGE_K.sub(r"\1k\2\3k", low)
     unit = "an"
@@ -143,9 +147,8 @@ def parse_salary(raw: str) -> tuple[int | None, int | None]:
     elif re.search(r"/\s*h(eure)?\b|par heure|horaire|hour", low):
         unit = "heure"
 
-    matches = re.findall(_SAL_NUM, low)
-    values = []
-    for num, k in matches:
+    annuals, dailies = [], []
+    for num, k in re.findall(_SAL_NUM, low):
         cleaned = re.sub(r"[   .,]", "", num)
         try:
             value = float(cleaned)
@@ -153,10 +156,20 @@ def parse_salary(raw: str) -> tuple[int | None, int | None]:
             continue
         annual = _to_annual_eur(value, unit, bool(k))
         if annual:
-            values.append(annual)
-    if not values:
-        return None, None
-    return min(values), max(values)
+            annuals.append(annual)
+            if unit == "jour" and 100 <= value <= 3000 and not k:
+                dailies.append(int(value))
+    if annuals:
+        out["annual_min"], out["annual_max"] = min(annuals), max(annuals)
+    if dailies:
+        out["tjm_min"], out["tjm_max"] = min(dailies), max(dailies)
+    return out
+
+
+def parse_salary(raw: str) -> tuple[int | None, int | None]:
+    """Extrait (min, max) en EUR brut annuel depuis un libellé libre."""
+    details = parse_salary_details(raw)
+    return details["annual_min"], details["annual_max"]
 
 
 def extract_tags(text: str) -> list[str]:
@@ -205,6 +218,8 @@ def make_job(
     teletravail: str = "",
     salaire_min: int | None = None,
     salaire_max: int | None = None,
+    tjm_min: int | None = None,
+    tjm_max: int | None = None,
     date_publication: str = "",
     description: str = "",
     employeur_type: str = "",
@@ -231,6 +246,8 @@ def make_job(
         "teletravail": teletravail,
         "salaire_min": salaire_min,
         "salaire_max": salaire_max,
+        "tjm_min": tjm_min,
+        "tjm_max": tjm_max,
         "date_publication": (date_publication or "")[:10],
         "source": source,
         "url": url,

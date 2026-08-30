@@ -31,7 +31,8 @@ _ESN = {
     "capfi", "meritis", "margo", "daveo", "positive thinking company",
     "acensi", "amaris", "mantu", "solutec", "dxc", "dxc technology",
     "tata consultancy services", "tcs", "infosys", "wipro", "cognizant",
-    "capco", "niji",
+    "capco", "niji", "mon assistant numerique", "b hive", "b hive engineering",
+    "exalt", "ltd", "ltd international",
 }
 
 # Cabinets de recrutement et agences d'intérim.

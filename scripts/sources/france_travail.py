@@ -193,10 +193,17 @@ def fetch_france_travail() -> list[dict]:
             if ref and ref not in seen:
                 seen[ref] = raw
 
-    for domaine in DOMAINES:
-        collect({"domaine": domaine}, f"domaine={domaine}")
-    for mots in MOTS_CLES:
-        collect({"motsCles": mots}, f"mots={mots}")
+    try:
+        for domaine in DOMAINES:
+            collect({"domaine": domaine}, f"domaine={domaine}")
+        for mots in MOTS_CLES:
+            collect({"motsCles": mots}, f"mots={mots}")
+    except Exception as exc:  # noqa: BLE001 - une panne FT ne doit pas stopper le run quotidien
+        print(
+            f"France Travail : échec ({type(exc).__name__}: {exc}), "
+            f"on garde {len(seen)} offres déjà récupérées.",
+            file=sys.stderr,
+        )
 
     jobs = [_convert(raw) for raw in seen.values()]
     print(f"France Travail : {len(jobs)} offres uniques", file=sys.stderr)

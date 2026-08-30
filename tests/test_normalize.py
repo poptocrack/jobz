@@ -74,6 +74,20 @@ class TestSalaire:
         assert parse_salary("13ème mois") == (None, None)
         assert parse_salary("") == (None, None)
 
+    def test_annuel_saisi_dans_champ_mensuel(self):
+        # Erreur de saisie fréquente (offre FT 213BPLB) : montants annuels
+        # déclarés mensuels. Ne doit PAS être multiplié par 12.
+        assert parse_salary("Mensuel de 45000.0 Euros à 50000.0 Euros sur 12.0 mois") == (45000, 50000)
+
+    def test_decimales_et_duree(self):
+        # "15.9" ne doit pas être lu comme 15 puis 9, et "sur 12.0 mois"
+        # n'est pas un montant.
+        low, high = parse_salary("Horaire de 15.9 Euros sur 12.0 mois")
+        assert low == high == 25600
+
+    def test_plafond_plausibilite(self):
+        assert parse_salary("650 000 € par an") == (None, None)
+
 
 class TestTags:
     def test_detection_basique(self):

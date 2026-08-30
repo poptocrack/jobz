@@ -107,21 +107,29 @@ def normalize_remote(raw: str) -> str:
 
 
 # Nombre : soit milliers groupés ("45 000", "45.000"), soit entier simple ("2500").
-_SAL_NUM = r"(\d{1,3}(?:[   .,]\d{3})+|\d+)\s*(k€|k)?"
+_SAL_NUM = r"(\d{1,3}(?:[   .,]\d{3})+|\d+(?:[.,]\d{1,2})?)\s*(k€|k)?"
 # "45-55k" : le premier nombre d'une fourchette hérite du suffixe k du second.
 _RANGE_K = re.compile(r"(\d+)(\s*[-–—/aà]\s*)(\d+)\s*k", re.IGNORECASE)
+
+
+# Bornes de plausibilité d'un brut annuel sur ce marché.
+SALARY_ANNUAL_MIN = 8000
+SALARY_ANNUAL_MAX = 400000
+# Au-delà, un montant déclaré "mensuel" est en réalité un annuel mal saisi
+# (fréquent sur France Travail : "Mensuel de 45000.0 Euros").
+MONTHLY_MAX_PLAUSIBLE = 15000
 
 
 def _to_annual_eur(value: float, unit_hint: str, k_flag: bool) -> int | None:
     if k_flag:
         value *= 1000
     if unit_hint == "mois":
-        value *= 12
+        value = value if value > MONTHLY_MAX_PLAUSIBLE else value * 12
     elif unit_hint == "jour":
         value *= 218  # jours ouvrés/an, approximation TJM -> annuel
     elif unit_hint == "heure":
         value *= 1607
-    if value < 8000 or value > 600000:
+    if value < SALARY_ANNUAL_MIN or value > SALARY_ANNUAL_MAX:
         return None
     return int(round(value / 100.0) * 100)
 
@@ -138,6 +146,7 @@ def parse_salary_details(raw: str) -> dict:
     if not raw:
         return out
     low = strip_accents(raw.lower())
+    low = re.sub(r"sur\s+\d+(?:[.,]\d+)?\s*(mois|an(?:nee)?s?)", " ", low)
     low = _RANGE_K.sub(r"\1k\2\3k", low)
     unit = "an"
     if re.search(r"/\s*mois|par mois|mensuel|month", low):
@@ -149,7 +158,10 @@ def parse_salary_details(raw: str) -> dict:
 
     annuals, dailies = [], []
     for num, k in re.findall(_SAL_NUM, low):
-        cleaned = re.sub(r"[   .,]", "", num)
+        if re.fullmatch(r"\d+[.,]\d{1,2}", num):
+            cleaned = num.replace(",", ".")
+        else:
+            cleaned = re.sub(r"[   .,]", "", num)
         try:
             value = float(cleaned)
         except ValueError:

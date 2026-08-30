@@ -16,7 +16,13 @@ import sys
 import time
 
 from scripts.http_util import make_session
-from scripts.normalize import make_job, normalize_contract, parse_salary
+from scripts.normalize import (
+    MONTHLY_MAX_PLAUSIBLE,
+    SALARY_ANNUAL_MAX,
+    SALARY_ANNUAL_MIN,
+    make_job,
+    normalize_contract,
+)
 
 ALGOLIA_APP = "CSEKHVMS53"
 ALGOLIA_KEY_DEFAULT = "4bd8f6215d0cc52b26430765769e65a0"
@@ -96,8 +102,10 @@ def _salary(hit: dict) -> dict:
     ):
         value = hit.get(key)
         if isinstance(value, (int, float)) and value > 0:
-            annual = int(value * factor)
-            if 8000 <= annual <= 600000:
+            # Un "mensuel" implausible est un annuel mal saisi : pas de ×12.
+            local_factor = 1 if (period == "monthly" and value > MONTHLY_MAX_PLAUSIBLE) else factor
+            annual = int(value * local_factor)
+            if SALARY_ANNUAL_MIN <= annual <= SALARY_ANNUAL_MAX:
                 out[ann_key] = annual
             if period == "daily" and 100 <= value <= 3000:
                 out[tjm_key] = int(value)

@@ -12,7 +12,20 @@ import sys
 import time
 
 from scripts.http_util import make_session
-from scripts.normalize import make_job, normalize_contract, normalize_remote
+from scripts.normalize import (
+    SALARY_ANNUAL_MAX,
+    SALARY_ANNUAL_MIN,
+    make_job,
+    normalize_contract,
+    normalize_remote,
+)
+
+
+def _plausible(value) -> int | None:
+    if not value:
+        return None
+    value = int(value)
+    return value if SALARY_ANNUAL_MIN <= value <= SALARY_ANNUAL_MAX else None
 
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search"
 RESULTS_PER_PAGE = 50
@@ -44,8 +57,8 @@ def _convert(raw: dict) -> dict:
         lon=raw.get("longitude"),
         contrat=contrat,
         teletravail=normalize_remote(raw.get("title", "") + " " + description[:500]),
-        salaire_min=int(raw["salary_min"]) if raw.get("salary_min") else None,
-        salaire_max=int(raw["salary_max"]) if raw.get("salary_max") else None,
+        salaire_min=_plausible(raw.get("salary_min")),
+        salaire_max=_plausible(raw.get("salary_max")),
         date_publication=(raw.get("created") or "")[:10],
         description=description,
     )

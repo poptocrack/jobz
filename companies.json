@@ -1,0 +1,424 @@
+{
+  "companies": [
+    {
+      "name": "360Learning",
+      "ats": "lever",
+      "slug": "360learning",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "Adikteev",
+      "ats": "recruitee",
+      "slug": "adikteev",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Agicap",
+      "ats": "lever",
+      "slug": "agicap",
+      "fr_jobs_at_probe": 11
+    },
+    {
+      "name": "Aircall",
+      "ats": "lever",
+      "slug": "aircall",
+      "fr_jobs_at_probe": 16
+    },
+    {
+      "name": "Akur8",
+      "ats": "ashby",
+      "slug": "akur8",
+      "fr_jobs_at_probe": 3
+    },
+    {
+      "name": "Alan",
+      "ats": "ashby",
+      "slug": "alan",
+      "fr_jobs_at_probe": 71
+    },
+    {
+      "name": "Algolia",
+      "ats": "greenhouse",
+      "slug": "algolia",
+      "fr_jobs_at_probe": 11
+    },
+    {
+      "name": "Alice & Bob",
+      "ats": "lever",
+      "slug": "alice-bob",
+      "fr_jobs_at_probe": 24
+    },
+    {
+      "name": "Ankorstore",
+      "ats": "ashby",
+      "slug": "ankorstore",
+      "fr_jobs_at_probe": 2
+    },
+    {
+      "name": "Back Market",
+      "ats": "ashby",
+      "slug": "backmarket",
+      "fr_jobs_at_probe": 11
+    },
+    {
+      "name": "Believe",
+      "ats": "smartrecruiters",
+      "slug": "believe",
+      "fr_jobs_at_probe": 8
+    },
+    {
+      "name": "BlaBlaCar",
+      "ats": "lever",
+      "slug": "blablacar",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "Brevo",
+      "ats": "lever",
+      "slug": "brevo",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "Contentsquare",
+      "ats": "lever",
+      "slug": "contentsquare",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Convelio",
+      "ats": "lever",
+      "slug": "convelio",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "CrowdSec",
+      "ats": "recruitee",
+      "slug": "crowdsec",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Cycle",
+      "ats": "recruitee",
+      "slug": "cycle",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Dataiku",
+      "ats": "greenhouse",
+      "slug": "dataiku",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Didomi",
+      "ats": "lever",
+      "slug": "didomi",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Doctolib",
+      "ats": "greenhouse",
+      "slug": "doctolib",
+      "fr_jobs_at_probe": 54
+    },
+    {
+      "name": "Doctrine",
+      "ats": "lever",
+      "slug": "doctrine",
+      "fr_jobs_at_probe": 20
+    },
+    {
+      "name": "Don't Nod",
+      "ats": "smartrecruiters",
+      "slug": "dontnod",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Dust",
+      "ats": "ashby",
+      "slug": "dust",
+      "fr_jobs_at_probe": 15
+    },
+    {
+      "name": "EcoVadis",
+      "ats": "smartrecruiters",
+      "slug": "ecovadis",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Epsor",
+      "ats": "smartrecruiters",
+      "slug": "epsor",
+      "fr_jobs_at_probe": 2
+    },
+    {
+      "name": "Equativ",
+      "ats": "lever",
+      "slug": "equativ",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Filigran",
+      "ats": "ashby",
+      "slug": "filigran",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "Finary",
+      "ats": "ashby",
+      "slug": "finary",
+      "fr_jobs_at_probe": 9
+    },
+    {
+      "name": "Gameloft",
+      "ats": "smartrecruiters",
+      "slug": "gameloft",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Gorgias",
+      "ats": "ashby",
+      "slug": "gorgias",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Heetch",
+      "ats": "lever",
+      "slug": "heetch",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Implicity",
+      "ats": "smartrecruiters",
+      "slug": "implicity",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Ivalua",
+      "ats": "greenhouse",
+      "slug": "ivalua",
+      "fr_jobs_at_probe": 14
+    },
+    {
+      "name": "JobTeaser",
+      "ats": "smartrecruiters",
+      "slug": "jobteaser",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Joko",
+      "ats": "ashby",
+      "slug": "joko",
+      "fr_jobs_at_probe": 51
+    },
+    {
+      "name": "Jump",
+      "ats": "ashby",
+      "slug": "jump",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Kestra",
+      "ats": "ashby",
+      "slug": "kestra",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Klaxoon",
+      "ats": "greenhouse",
+      "slug": "klaxoon",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Ledger",
+      "ats": "ashby",
+      "slug": "ledger",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Lifen",
+      "ats": "ashby",
+      "slug": "lifen",
+      "fr_jobs_at_probe": 3
+    },
+    {
+      "name": "Livestorm",
+      "ats": "recruitee",
+      "slug": "livestorm",
+      "fr_jobs_at_probe": 2
+    },
+    {
+      "name": "Malt",
+      "ats": "lever",
+      "slug": "malt",
+      "fr_jobs_at_probe": 17
+    },
+    {
+      "name": "Mirakl",
+      "ats": "greenhouse",
+      "slug": "mirakl",
+      "fr_jobs_at_probe": 3
+    },
+    {
+      "name": "Nabla",
+      "ats": "ashby",
+      "slug": "nabla",
+      "fr_jobs_at_probe": 10
+    },
+    {
+      "name": "Numeral",
+      "ats": "ashby",
+      "slug": "numeral",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Odaseva",
+      "ats": "lever",
+      "slug": "odaseva",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Ogury",
+      "ats": "lever",
+      "slug": "ogury",
+      "fr_jobs_at_probe": 6
+    },
+    {
+      "name": "Outsight",
+      "ats": "lever",
+      "slug": "outsight",
+      "fr_jobs_at_probe": 9
+    },
+    {
+      "name": "Owkin",
+      "ats": "ashby",
+      "slug": "owkin",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Payflows",
+      "ats": "recruitee",
+      "slug": "payflows",
+      "fr_jobs_at_probe": 8
+    },
+    {
+      "name": "Pennylane",
+      "ats": "ashby",
+      "slug": "pennylane",
+      "fr_jobs_at_probe": 116
+    },
+    {
+      "name": "PhotoRoom",
+      "ats": "ashby",
+      "slug": "photoroom",
+      "fr_jobs_at_probe": 13
+    },
+    {
+      "name": "Pigment",
+      "ats": "lever",
+      "slug": "pigment",
+      "fr_jobs_at_probe": 39
+    },
+    {
+      "name": "Platform.sh",
+      "ats": "greenhouse",
+      "slug": "platformsh",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Qonto",
+      "ats": "ashby",
+      "slug": "qonto",
+      "fr_jobs_at_probe": 22
+    },
+    {
+      "name": "Scaleway",
+      "ats": "lever",
+      "slug": "scaleway",
+      "fr_jobs_at_probe": 35
+    },
+    {
+      "name": "Sellsy",
+      "ats": "recruitee",
+      "slug": "sellsy",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Shift Technology",
+      "ats": "greenhouse",
+      "slug": "shifttechnology",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "Shippeo",
+      "ats": "smartrecruiters",
+      "slug": "shippeo",
+      "fr_jobs_at_probe": 5
+    },
+    {
+      "name": "Silvr",
+      "ats": "greenhouse",
+      "slug": "silvr",
+      "fr_jobs_at_probe": 1
+    },
+    {
+      "name": "Sorare",
+      "ats": "ashby",
+      "slug": "sorare",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Swan",
+      "ats": "ashby",
+      "slug": "swan",
+      "fr_jobs_at_probe": 8
+    },
+    {
+      "name": "Swile",
+      "ats": "lever",
+      "slug": "swile",
+      "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "The Exploration Company",
+      "ats": "ashby",
+      "slug": "the-exploration-company",
+      "fr_jobs_at_probe": 44
+    },
+    {
+      "name": "Ubisoft",
+      "ats": "smartrecruiters",
+      "slug": "Ubisoft2",
+      "fr_jobs_at_probe": 89
+    },
+    {
+      "name": "Verkor",
+      "ats": "lever",
+      "slug": "verkor",
+      "fr_jobs_at_probe": 48
+    },
+    {
+      "name": "Vestiaire Collective",
+      "ats": "lever",
+      "slug": "vestiairecollective",
+      "fr_jobs_at_probe": 8
+    },
+    {
+      "name": "Voodoo",
+      "ats": "ashby",
+      "slug": "voodoo",
+      "fr_jobs_at_probe": 74
+    },
+    {
+      "name": "Younited",
+      "ats": "lever",
+      "slug": "younited",
+      "fr_jobs_at_probe": 4
+    },
+    {
+      "name": "Zenchef",
+      "ats": "recruitee",
+      "slug": "zenchef",
+      "fr_jobs_at_probe": 1
+    }
+  ]
+}

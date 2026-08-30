@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jobz — L'emploi tech en France</title>
+  <meta name="description" content="Agrégateur d'offres d'emploi tech en France : startups, scale-ups et entreprises, mis à jour quotidiennement.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇫🇷</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">jz</span>
+        <div>
+          <h1>jobz</h1>
+          <span class="tagline">l'emploi tech en France</span>
+        </div>
+      </div>
+      <div class="meta" id="meta-info" aria-live="polite">Chargement…</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Filtres">
+      <div class="panel">
+        <div class="panel-head">
+          <button id="filters-toggle" class="filters-toggle" type="button" aria-expanded="true">
+            <h2>Filtres</h2>
+            <span id="filter-count" class="filter-count" hidden></span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <button id="reset-filters" class="btn btn-ghost" type="button" hidden>Réinitialiser</button>
+        </div>
+
+        <div class="field">
+          <label for="exclude-input">Exclure des mots-clés</label>
+          <input type="text" id="exclude-input" class="input" placeholder="ex : senior, consultant" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <span class="field-label">Type de contrat</span>
+          <div class="chip-group" id="contract-chips">
+            <button class="chip" data-value="CDI" type="button">CDI</button>
+            <button class="chip" data-value="CDD" type="button">CDD</button>
+            <button class="chip" data-value="Stage" type="button">Stage</button>
+            <button class="chip" data-value="Alternance" type="button">Alternance</button>
+            <button class="chip" data-value="Freelance" type="button">Freelance</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="remote-select">Télétravail</label>
+          <select id="remote-select" class="select">
+            <option value="">Tous</option>
+            <option value="total">Full remote</option>
+            <option value="hybride">Hybride</option>
+            <option value="sur site">Sur site</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="region-select">Région</label>
+          <select id="region-select" class="select">
+            <option value="">Toutes les régions</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="salary-input">Salaire minimum (k€ brut/an)</label>
+          <input type="number" id="salary-input" class="input" placeholder="ex : 45" min="0" max="500">
+        </div>
+
+        <div class="field">
+          <label for="source-select">Source</label>
+          <select id="source-select" class="select">
+            <option value="">Toutes les sources</option>
+          </select>
+        </div>
+
+        <label class="switch-row" for="tracked-only">
+          <input type="checkbox" id="tracked-only">
+          <span>Offres suivies uniquement</span>
+        </label>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="search-bar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="search" id="search-input" class="input input-lg" placeholder="Titre, entreprise, techno… (ex : react, data engineer, Doctolib)" autocomplete="off">
+        </div>
+        <select id="sort-select" class="select" aria-label="Tri">
+          <option value="date">Plus récentes</option>
+          <option value="salaire">Salaire décroissant</option>
+          <option value="entreprise">Entreprise A→Z</option>
+        </select>
+        <div class="view-switch" role="tablist" aria-label="Vue">
+          <button id="view-list" class="active" role="tab" aria-selected="true" type="button">Liste</button>
+          <button id="view-map" role="tab" aria-selected="false" type="button">Carte</button>
+        </div>
+      </div>
+
+      <div id="result-count" class="result-count" aria-live="polite"></div>
+
+      <div id="list-view">
+        <div id="jobs-container" class="jobs"></div>
+        <nav id="pagination" class="pagination" aria-label="Pages"></nav>
+      </div>
+      <div id="map-view" hidden>
+        <div id="map" aria-label="Carte des offres"></div>
+      </div>
+
+      <footer>
+        <p>
+          Données agrégées depuis les sites carrière des entreprises (Greenhouse, Lever, Ashby, Recruitee,
+          SmartRecruiters), Welcome to the Jungle, France Travail et Adzuna.
+          Le suivi des candidatures reste dans votre navigateur.
+        </p>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

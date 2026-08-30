@@ -1,0 +1,74 @@
+name: Scrape & Deploy
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 06h/07h Paris selon la saison
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurer le cache de géocodage
+        uses: actions/cache@v4
+        with:
+          path: data/geo_cache.json
+          key: geo-cache-${{ github.run_id }}
+          restore-keys: geo-cache-
+
+      - name: Construire les données
+        env:
+          FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
+          FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python -m scripts.build
+
+      - name: Vérifier le volume minimal
+        run: |
+          python - <<'EOF'
+          import json, sys
+          manifest = json.load(open("data/manifest.json"))
+          total = manifest["total"]
+          print(f"{total} offres — sources: {manifest['stats']['par_source']}")
+          if total < 2000:
+              sys.exit(f"Volume anormalement bas ({total} offres), déploiement annulé.")
+          EOF
+
+      - name: Assembler le site
+        run: |
+          mkdir -p _site/data
+          cp -r site/* _site/
+          cp data/manifest.json data/*.json.gz _site/data/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

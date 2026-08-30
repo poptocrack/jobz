@@ -43,6 +43,15 @@ jobs:
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
         run: python -m scripts.build
 
+      - name: Newsletter (avant-première)
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
+          BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
+          BREVO_SENDER_NAME: jobz
+          BREVO_UNSUB_URL: ${{ vars.BREVO_UNSUB_URL }}
+        run: python -m scripts.newsletter
+
       - name: Vérifier le volume minimal
         run: |
           python - <<'EOF'
@@ -58,7 +67,7 @@ jobs:
         run: |
           mkdir -p _site/data
           cp -r site/* _site/
-          cp data/manifest.json data/analytics.json data/history.json data/*.json.gz _site/data/
+          cp data/manifest.json data/analytics.json data/history.json data/seen_ids.json data/*.json.gz _site/data/
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -71,5 +80,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Avant-première newsletter : le site est retenu DEPLOY_DELAY_SECONDS
+      # après l'envoi des emails (variable de repo ; 0 ou absente = immédiat).
+      - name: Retenue avant publication
+        if: ${{ vars.DEPLOY_DELAY_SECONDS != '' && vars.DEPLOY_DELAY_SECONDS != '0' }}
+        run: sleep ${{ vars.DEPLOY_DELAY_SECONDS }}
       - id: deployment
         uses: actions/deploy-pages@v4

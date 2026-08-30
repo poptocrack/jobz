@@ -59,3 +59,10 @@ class TestRendu:
         offres = [job(ref=f"r{i}", titre=f"Poste {i}") for i in range(30)]
         _, html = render_email(offres, {"q": ""})
         assert "+ 10 autres offres" in html
+
+    def test_accroche_par_palier(self):
+        _, html_premium = render_email([job()], {"q": ""}, tier="premium")
+        _, html_free = render_email([job()], {"q": ""}, tier="free")
+        assert "avant-première" in html_premium
+        assert "avant-première" not in html_free
+        assert "désormais en ligne" in html_free

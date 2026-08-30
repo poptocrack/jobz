@@ -10,9 +10,17 @@ Architecture en trois couches pour que le backend d'abonnés soit remplaçable
 Un abonné = {"email", "criteres": {q, contrats, remote, region, employeur,
 salaire_min}, "premium": bool}.
 
+Deux paliers d'envoi :
+    --tier premium : calcule le diff des nouvelles offres, l'écrit dans
+                     data/new_jobs.json, et n'envoie qu'aux abonnés PREMIUM
+                     (une heure avant la publication du site).
+    --tier free    : relit data/new_jobs.json (pas de recalcul) et envoie aux
+                     abonnés gratuits, au moment de la publication.
+    --tier all     : diff + envoi à tout le monde (runs manuels).
+
 Usage :
     python -m scripts.newsletter --dry-run     # détection + matching, aucun envoi
-    python -m scripts.newsletter               # envoi réel (BREVO_API_KEY requis)
+    python -m scripts.newsletter --tier all    # envoi réel (BREVO_API_KEY requis)
 """
 
 from __future__ import annotations
@@ -121,8 +129,8 @@ def _fmt_salary(job: dict) -> str:
     return ""
 
 
-def render_email(matches: list[dict], criteres: dict) -> tuple[str, str]:
-    """Retourne (sujet, html)."""
+def render_email(matches: list[dict], criteres: dict, tier: str = "premium") -> tuple[str, str]:
+    """Retourne (sujet, html). Le palier change uniquement la phrase d'accroche."""
     n = len(matches)
     shown = matches[:MAX_OFFERS_PER_EMAIL]
     label = criteres.get("q") or "votre recherche"
@@ -146,9 +154,13 @@ def render_email(matches: list[dict], criteres: dict) -> tuple[str, str]:
     if n > len(shown):
         more = f'<p style="color:#666;font-size:13px;">+ {n - len(shown)} autres offres sur le site.</p>'
 
+    if tier == "free":
+        pitch = "Nouvelles offres correspondant à vos critères, désormais en ligne :"
+    else:
+        pitch = ("Nouvelles offres correspondant à vos critères, "
+                 "<strong>en avant-première</strong> (en ligne sur le site dans 1&nbsp;heure) :")
     html = f"""<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px;margin:0 auto;padding:16px;">
-<p style="font-size:14px;color:#444;">Nouvelles offres correspondant à vos critères,
-<strong>en avant-première</strong> (en ligne sur le site dans 1&nbsp;heure) :</p>
+<p style="font-size:14px;color:#444;">{pitch}</p>
 <table style="width:100%;border-collapse:collapse;">{''.join(rows)}</table>
 {more}
 <p style="margin-top:20px;"><a href="{SITE_URL}" style="color:#0f4bb8;">Voir toutes les offres sur jobz</a></p>
@@ -174,37 +186,54 @@ def send_email(to: str, sujet: str, html: str) -> None:
 
 # ---------- Orchestration ----------
 
+NEW_JOBS_PATH = DATA_DIR / "new_jobs.json"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true", help="détection et matching sans envoi")
+    parser.add_argument("--tier", choices=["all", "premium", "free"], default="all")
     args = parser.parse_args()
 
-    jobs = load_jobs()
-    new_jobs, seen = detect_new(jobs)
-    write_seen(seen)
-    print(f"Newsletter : {len(new_jobs)} nouvelles offres depuis le dernier run", file=sys.stderr)
+    if args.tier == "free":
+        # Le diff a été calculé (et l'état seen écrit) par la passe premium du même run.
+        if not NEW_JOBS_PATH.exists():
+            print("Newsletter [free] : pas de new_jobs.json, rien à envoyer.", file=sys.stderr)
+            return
+        new_jobs = json.loads(NEW_JOBS_PATH.read_text())
+    else:
+        jobs = load_jobs()
+        new_jobs, seen = detect_new(jobs)
+        write_seen(seen)
+        NEW_JOBS_PATH.write_text(json.dumps(new_jobs, ensure_ascii=False))
+    print(f"Newsletter [{args.tier}] : {len(new_jobs)} nouvelles offres depuis le dernier run", file=sys.stderr)
     if not new_jobs:
         return
 
     subscribers = get_subscribers()
-    if not subscribers and not args.dry_run:
-        print("Newsletter : aucun abonné (ou BREVO_API_KEY absent), rien à envoyer.", file=sys.stderr)
+    if args.tier == "premium":
+        subscribers = [s for s in subscribers if s["premium"]]
+    elif args.tier == "free":
+        subscribers = [s for s in subscribers if not s["premium"]]
+    if not subscribers:
+        print(f"Newsletter [{args.tier}] : aucun abonné concerné (ou BREVO_API_KEY absent).", file=sys.stderr)
         return
 
+    email_tier = "free" if args.tier == "free" else "premium"
     sent = 0
     for sub in subscribers:
         matches = [j for j in new_jobs if job_matches(j, sub["criteres"])]
         if not matches:
             continue
         matches.sort(key=lambda j: (j["employeur_type"] != "client final", -(j["salaire_max"] or 0)))
-        sujet, html = render_email(matches, sub["criteres"])
+        sujet, html = render_email(matches, sub["criteres"], tier=email_tier)
         if args.dry_run:
             print(f"  [dry-run] {sub['email']} <- {len(matches)} offres : {sujet}", file=sys.stderr)
         else:
             send_email(sub["email"], sujet, html)
         sent += 1
     mode = "simulé(s)" if args.dry_run else "envoyé(s)"
-    print(f"Newsletter : {sent} email(s) {mode} sur {len(subscribers)} abonné(s)", file=sys.stderr)
+    print(f"Newsletter [{args.tier}] : {sent} email(s) {mode} sur {len(subscribers)} abonné(s)", file=sys.stderr)
 
 
 if __name__ == "__main__":

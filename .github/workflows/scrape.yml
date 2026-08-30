@@ -44,13 +44,35 @@ jobs:
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
         run: python -m scripts.build
 
-      - name: Newsletter (avant-première)
+      # --- Newsletter ---
+      # Tant que PREMIUM_ENABLED n'est pas 'true' : tout le monde reçoit les
+      # alertes avant la publication (offre de lancement). Une fois activé :
+      # premium d'abord, gratuits au moment de la publication.
+      - name: Sync premium (Stripe)
+        if: vars.PREMIUM_ENABLED == 'true'
+        env:
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
+        run: python -m scripts.stripe_sync
+
+      - name: Newsletter (tous les abonnés, avant-première)
+        if: vars.PREMIUM_ENABLED != 'true'
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
           BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
           BREVO_SENDER_NAME: tech-jobz
-        run: python -m scripts.newsletter
+        run: python -m scripts.newsletter --tier all
+
+      - name: Newsletter premium (avant-première)
+        if: vars.PREMIUM_ENABLED == 'true'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
+          BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
+          BREVO_SENDER_NAME: tech-jobz
+        run: python -m scripts.newsletter --tier premium
 
       - name: Vérifier le volume minimal
         run: |
@@ -62,6 +84,21 @@ jobs:
           if total < 2000:
               sys.exit(f"Volume anormalement bas ({total} offres), déploiement annulé.")
           EOF
+
+      # L'avant-première : les emails sont partis, le site attend 1 h.
+      # Sur un run manuel (workflow_dispatch, déploiement de code), pas d'attente.
+      - name: Retenue avant publication
+        if: github.event_name == 'schedule' && vars.DEPLOY_DELAY_SECONDS != '' && vars.DEPLOY_DELAY_SECONDS != '0'
+        run: sleep ${{ vars.DEPLOY_DELAY_SECONDS }}
+
+      - name: Newsletter gratuite (à la publication)
+        if: github.event_name == 'schedule' && vars.PREMIUM_ENABLED == 'true'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
+          BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
+          BREVO_SENDER_NAME: tech-jobz
+        run: python -m scripts.newsletter --tier free
 
       - name: Assembler le site
         run: |
@@ -80,10 +117,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      # Avant-première newsletter : le site est retenu DEPLOY_DELAY_SECONDS
-      # après l'envoi des emails (variable de repo ; 0 ou absente = immédiat).
-      - name: Retenue avant publication
-        if: ${{ vars.DEPLOY_DELAY_SECONDS != '' && vars.DEPLOY_DELAY_SECONDS != '0' }}
-        run: sleep ${{ vars.DEPLOY_DELAY_SECONDS }}
       - id: deployment
         uses: actions/deploy-pages@v4

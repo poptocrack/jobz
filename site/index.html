@@ -34,7 +34,7 @@
 
   <div class="layout">
     <aside class="sidebar" aria-label="Filtres">
-      <div class="panel">
+      <div class="panel filters-panel">
         <div class="panel-head">
           <button id="filters-toggle" class="filters-toggle" type="button" aria-expanded="true">
             <h2>Filtres</h2>
@@ -103,6 +103,19 @@
           <input type="checkbox" id="tracked-only">
           <span>Offres suivies uniquement</span>
         </label>
+      </div>
+
+      <div class="panel alert-panel">
+        <div class="panel-head"><h2>Alertes email</h2></div>
+        <p class="alert-pitch">Recevez les nouvelles offres qui matchent votre recherche,
+          <strong>1&nbsp;h avant</strong> leur publication sur le site.</p>
+        <p id="alert-summary" class="alert-summary"></p>
+        <form id="alert-form">
+          <input type="email" id="alert-email" class="input" placeholder="votre@email.fr" required autocomplete="email">
+          <button type="submit" class="btn btn-primary">M'alerter sur cette recherche</button>
+        </form>
+        <p id="alert-status" class="alert-status" aria-live="polite"></p>
+        <p class="alert-legal">Double opt-in, désinscription en un clic, deux envois par jour maximum.</p>
       </div>
     </aside>
 

@@ -451,6 +451,27 @@ footer {
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
+/* ---------- Alertes email ---------- */
+
+.alert-panel { margin-top: 1rem; }
+.alert-pitch { margin: 0; font-size: 0.82rem; }
+.alert-summary { margin: 0.4rem 0 0.2rem; font-size: 0.74rem; color: var(--muted-foreground); }
+#alert-form { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  justify-content: center;
+  padding: 0.55rem 0.8rem;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+.alert-status { margin: 0; font-size: 0.78rem; min-height: 1em; }
+.alert-status.ok { color: var(--ok); }
+.alert-status.err { color: var(--accent-2, #c0392b); }
+.alert-legal { margin: 0; font-size: 0.68rem; color: var(--muted-foreground); opacity: 0.85; }
+
 /* ---------- Page Analyse ---------- */
 
 .analytics {
@@ -534,15 +555,16 @@ footer {
   .charts-grid { grid-template-columns: 1fr; }
   .site-nav { margin-right: 0; }
   .sidebar { position: static; }
-  .panel { padding: 0.85rem; gap: 0; }
+  .panel { padding: 0.85rem; }
+  .filters-panel { gap: 0; }
   /* Filtres repliés par défaut sur mobile, dépliés via le toggle. */
   .filters-toggle { cursor: pointer; }
   .filters-toggle .chevron { display: block; }
-  .panel.open .filters-toggle .chevron { transform: rotate(180deg); }
-  .panel .field, .panel .switch-row { display: none; }
-  .panel.open { gap: 0.9rem; }
-  .panel.open .field { display: flex; }
-  .panel.open .switch-row { display: flex; }
+  .filters-panel.open .filters-toggle .chevron { transform: rotate(180deg); }
+  .filters-panel .field, .filters-panel .switch-row { display: none; }
+  .filters-panel.open { gap: 0.9rem; }
+  .filters-panel.open .field { display: flex; }
+  .filters-panel.open .switch-row { display: flex; }
 }
 
 @media (max-width: 640px) {

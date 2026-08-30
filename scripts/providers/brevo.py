@@ -38,16 +38,24 @@ def fetch_subscribers(api_key: str) -> list[dict]:
             if contact.get("emailBlacklisted"):
                 continue
             attrs = contact.get("attributes") or {}
+            # Les critères arrivent sérialisés dans CRITERES ("Q=react|CONTRATS=CDI,CDD|...")
+            # avec repli sur d'éventuels attributs séparés (migration future).
+            parsed = {}
+            for part in (attrs.get("CRITERES") or "").split("|"):
+                if "=" in part:
+                    key, _, value = part.partition("=")
+                    parsed[key.strip().upper()] = value.strip()
+            get = lambda key: parsed.get(key) or attrs.get(key) or ""  # noqa: E731
             subscribers.append({
                 "email": contact["email"],
                 "premium": bool(attrs.get("PREMIUM")),
                 "criteres": {
-                    "q": attrs.get("Q") or "",
-                    "contrats": [c.strip() for c in (attrs.get("CONTRATS") or "").split(",") if c.strip()],
-                    "remote": attrs.get("REMOTE") or "",
-                    "region": attrs.get("REGION") or "",
-                    "employeur": attrs.get("EMPLOYEUR") or "",
-                    "salaire_min": attrs.get("SALAIRE_MIN") or 0,
+                    "q": get("Q"),
+                    "contrats": [c.strip() for c in get("CONTRATS").split(",") if c.strip()],
+                    "remote": get("REMOTE"),
+                    "region": get("REGION"),
+                    "employeur": get("EMPLOYEUR"),
+                    "salaire_min": get("SALAIRE_MIN") or 0,
                 },
             })
         if len(contacts) < 500:
@@ -56,12 +64,11 @@ def fetch_subscribers(api_key: str) -> list[dict]:
 
 
 def send_transactional(api_key: str, to: str, sujet: str, html: str) -> None:
-    unsub = os.environ.get("BREVO_UNSUB_URL", "")
-    if unsub:
-        html += (
-            f'<p style="color:#999;font-size:11px;margin-top:24px;">'
-            f'<a href="{unsub}" style="color:#999;">Se désinscrire</a></p>'
-        )
+    # {{ unsubscribe }} est rendu par Brevo en lien de désinscription individuel.
+    html += (
+        '<p style="color:#999;font-size:11px;margin-top:24px;">'
+        '<a href="{{ unsubscribe }}" style="color:#999;">Se désinscrire de ces alertes</a></p>'
+    )
     payload = {
         "sender": {
             "email": os.environ["BREVO_SENDER_EMAIL"],

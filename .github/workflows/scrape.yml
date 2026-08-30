@@ -48,8 +48,7 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
           BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
-          BREVO_SENDER_NAME: jobz
-          BREVO_UNSUB_URL: ${{ vars.BREVO_UNSUB_URL }}
+          BREVO_SENDER_NAME: tech-jobz
         run: python -m scripts.newsletter
 
       - name: Vérifier le volume minimal

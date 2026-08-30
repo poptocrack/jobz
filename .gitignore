@@ -2,6 +2,7 @@
 __pycache__/
 .pytest_cache/
 .env
+.snapshots/
 data/
 _site/
 .DS_Store

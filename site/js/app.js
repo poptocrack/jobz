@@ -5,6 +5,8 @@ import { renderJobs, renderSkeletons, sourceLabel } from "./renderer.js";
 import { PAGE_SIZE, paginate, renderPagination } from "./pagination.js";
 import { filtersFromUrl, filtersToUrl } from "./url_state.js";
 import { showMap } from "./map_view.js";
+import { initNewsletterForm } from "./newsletter_form.js";
+import { phCapture, phInit } from "./ph.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -125,6 +127,18 @@ function wireControls() {
     render();
   }, 180));
 
+  // Événements produit : recherche stabilisée, clic sur offre, bascule carte.
+  $("search-input").addEventListener("change", (e) => {
+    if (e.target.value.trim()) phCapture("recherche", { q: e.target.value.trim(), resultats: state.filtered.length });
+  });
+  $("jobs-container").addEventListener("click", (e) => {
+    const link = e.target.closest(".job-title");
+    if (!link) return;
+    const card = link.closest(".job-card");
+    const job = state.filtered.find((j) => j.id === card?.dataset.id);
+    if (job) phCapture("offre_cliquee", { source: job.source, employeur_type: job.employeur_type || "inconnu", contrat: job.contrat });
+  });
+
   $("exclude-input").addEventListener("input", debounce((e) => {
     state.filters.exclude = e.target.value.trim();
     render();
@@ -170,7 +184,7 @@ function wireControls() {
   });
 
   $("view-list").addEventListener("click", () => setView("list"));
-  $("view-map").addEventListener("click", () => setView("map"));
+  $("view-map").addEventListener("click", () => { setView("map"); phCapture("vue_carte"); });
 
   $("filters-toggle").addEventListener("click", () => {
     const panel = document.querySelector(".panel");
@@ -180,6 +194,7 @@ function wireControls() {
 }
 
 async function init() {
+  phInit();
   renderSkeletons($("jobs-container"));
   const fromUrl = filtersFromUrl();
   state.filters = fromUrl.filters;
@@ -213,6 +228,7 @@ async function init() {
 
     wireControls();
     syncControls();
+    initNewsletterForm();
     if (state.view === "map") setView("map");
     else render({ resetPage: false });
   } catch (err) {

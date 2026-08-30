@@ -2,6 +2,9 @@
 // Un seul ton (l'accent du site) pour les séries : chaque graphique compare des
 // magnitudes, pas des identités. Grille en trait fin, tooltips, jumeau tableau.
 
+import { phInit } from "./ph.js";
+phInit();
+
 const $ = (id) => document.getElementById(id);
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();

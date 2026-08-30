@@ -16,7 +16,7 @@ from scripts.normalize import make_job, normalize_contract, normalize_remote
 
 BASE_URL = "https://api.adzuna.com/v1/api/jobs/fr/search"
 RESULTS_PER_PAGE = 50
-MAX_PAGES = 100  # 5000 offres max par run, ~100 appels
+MAX_PAGES = 60  # 3000 offres max par run, ~60 appels (marge quota gratuit avec 3 runs/jour)
 
 _CONTRACT_MAP = {"permanent": "CDI", "contract": "CDD"}
 

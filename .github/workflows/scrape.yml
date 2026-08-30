@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: "0 5 * * *"  # ~06h/07h Paris selon la saison
     - cron: "0 11 * * *" # ~12h/13h Paris
+    - cron: "0 17 * * *" # ~18h/19h Paris
   workflow_dispatch:
 
 permissions:

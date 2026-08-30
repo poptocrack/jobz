@@ -6,7 +6,7 @@ import time
 
 import requests
 
-USER_AGENT = "jobz-aggregator/1.0 (+https://github.com/tristandebroise/jobz)"
+USER_AGENT = "jobz-aggregator/1.0 (+https://github.com/poptocrack/jobz)"
 DEFAULT_TIMEOUT = 20
 
 

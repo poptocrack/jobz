@@ -166,6 +166,10 @@ body {
 }
 .strapline strong { color: var(--foreground); font-weight: 600; }
 
+.footer-links { margin-top: 0.4rem; }
+.footer-links a { color: var(--accent); text-decoration: none; }
+.footer-links a:hover { text-decoration: underline; }
+
 .seo-links { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; margin-top: 0.6rem; }
 .seo-links a { color: var(--muted-foreground); font-size: 0.72rem; text-decoration: none; }
 .seo-links a:hover { color: var(--accent); text-decoration: underline; }

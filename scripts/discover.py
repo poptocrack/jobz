@@ -231,7 +231,10 @@ def main() -> None:
     if args.probe:
         run_probe()
     elif args.cc:
-        run_common_crawl(args.cc, args.cc_max_pages)
+        try:
+            run_common_crawl(args.cc, args.cc_max_pages)
+        except Exception as exc:  # noqa: BLE001 - l'index CC est souvent indisponible
+            print(f"Découverte {args.cc} abandonnée ({type(exc).__name__}: {exc})", file=sys.stderr)
     elif args.from_file:
         run_from_file(args.from_file)
     else:

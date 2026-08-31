@@ -620,6 +620,38 @@ footer {
 .recruiter-list li span:first-of-type { flex: 1; }
 .recruiter-list .n { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 
+/* ---------- Page Sources ---------- */
+
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.source-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.1rem;
+}
+.source-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.source-head h2 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.source-desc { color: var(--muted-foreground); font-size: 0.8rem; margin: 0.35rem 0 0.8rem; }
+.source-stats { display: flex; gap: 2rem; }
+.source-stats .stat-value { display: block; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+.source-stats .stat-label { color: var(--muted-foreground); font-size: 0.72rem; }
+.stat-value.freshness.fresh { color: var(--ok); }
+.stat-value.freshness.stale { color: var(--warn); }
+.source-detail {
+  display: flex; flex-wrap: wrap; gap: 0.3rem 1rem;
+  margin-top: 0.8rem; padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground); font-size: 0.76rem;
+}
+.source-detail strong { color: var(--foreground); }
+
 /* ---------- Pages SEO statiques ---------- */
 
 .seo-page { max-width: 780px; margin: 0 auto; padding: 1.5rem; }

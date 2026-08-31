@@ -160,8 +160,32 @@ def stamp_and_diff(jobs: list[dict], out_dir: Path) -> set[str]:
     return embargoed
 
 
-def write_output(jobs: list[dict], out_dir: Path, errors: dict, exclude_ids: set[str] | None = None) -> None:
+def sources_meta(jobs: list[dict], out_dir: Path, fetched: set[str]) -> dict:
+    """Par source : nombre d'offres publiées et horodatage du dernier fetch.
+
+    Les sources non rafraîchies par ce run (ATS pendant un run léger) gardent
+    l'horodatage du manifest précédent."""
+    previous = {}
+    manifest_path = out_dir / "manifest.json"
+    if manifest_path.exists():
+        previous = json.loads(manifest_path.read_text()).get("sources", {})
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    counts = Counter(j["source"] for j in jobs)
+    meta = {}
+    for source in set(counts) | set(previous) | fetched:
+        if not counts.get(source) and source not in fetched:
+            continue
+        meta[source] = {
+            "offres": counts.get(source, 0),
+            "dernier_fetch": now_iso if source in fetched else previous.get(source, {}).get("dernier_fetch"),
+        }
+    return meta
+
+
+def write_output(jobs: list[dict], out_dir: Path, errors: dict,
+                 exclude_ids: set[str] | None = None, fetched: set[str] | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    sources = sources_meta(jobs, out_dir, fetched or set())
     if exclude_ids:
         jobs = [j for j in jobs if j["id"] not in exclude_ids]
     jobs.sort(key=lambda j: j["date_publication"] or "0000", reverse=True)
@@ -195,6 +219,7 @@ def write_output(jobs: list[dict], out_dir: Path, errors: dict, exclude_ids: set
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "total": len(jobs),
         "chunks": chunks,
+        "sources": sources,
         "stats": build_stats(jobs, errors),
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
@@ -231,7 +256,11 @@ def main() -> None:
     classify_employers(jobs)
     enrich_geo(jobs)
     embargoed = stamp_and_diff(jobs, out_dir)
-    write_output(jobs, out_dir, errors, exclude_ids=embargoed)
+    ats_names = {"greenhouse", "lever", "ashby", "recruitee", "smartrecruiters", "workable"}
+    fetched = {"france_travail", "wttj", "adzuna"} - skip
+    if "ats" not in skip:
+        fetched |= ats_names
+    write_output(jobs, out_dir, errors, exclude_ids=embargoed, fetched=fetched)
     write_analytics(jobs, out_dir)
 
 

@@ -65,30 +65,34 @@ def _convert(raw: dict) -> dict:
     )
 
 
-def fetch_adzuna() -> list[dict]:
-    """Récupère les offres IT France d'Adzuna. Retourne [] si identifiants absents."""
+def fetch_adzuna(since_hours: int | None = None) -> list[dict]:
+    """Récupère les offres IT France d'Adzuna. Retourne [] si identifiants absents.
+
+    since_hours : mode incrémental (runs légers), les offres du dernier jour
+    sur quelques pages seulement — préserve le quota gratuit.
+    """
     app_id = os.environ.get("ADZUNA_APP_ID", "")
     app_key = os.environ.get("ADZUNA_APP_KEY", "")
     if not app_id or not app_key:
         print("Adzuna : ADZUNA_APP_ID/ADZUNA_APP_KEY absents, source ignorée.", file=sys.stderr)
         return []
 
+    max_pages = 5 if since_hours else MAX_PAGES
     session = make_session()
     jobs = []
     try:
-        for page in range(1, MAX_PAGES + 1):
-            resp = session.get(
-                f"{BASE_URL}/{page}",
-                params={
-                    "app_id": app_id,
-                    "app_key": app_key,
-                    "results_per_page": RESULTS_PER_PAGE,
-                    "category": "it-jobs",
-                    "sort_by": "date",
-                    "content-type": "application/json",
-                },
-                timeout=30,
-            )
+        for page in range(1, max_pages + 1):
+            params = {
+                "app_id": app_id,
+                "app_key": app_key,
+                "results_per_page": RESULTS_PER_PAGE,
+                "category": "it-jobs",
+                "sort_by": "date",
+                "content-type": "application/json",
+            }
+            if since_hours:
+                params["max_days_old"] = 1
+            resp = session.get(f"{BASE_URL}/{page}", params=params, timeout=30)
             if resp.status_code == 429:
                 print("Adzuna : quota atteint, arrêt propre.", file=sys.stderr)
                 break

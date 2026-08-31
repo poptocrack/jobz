@@ -175,13 +175,26 @@ def _convert(raw: dict) -> dict:
     )
 
 
-def fetch_france_travail() -> list[dict]:
-    """Récupère les offres tech France Travail. Retourne [] si identifiants absents."""
+def fetch_france_travail(since_hours: int | None = None) -> list[dict]:
+    """Récupère les offres tech France Travail. Retourne [] si identifiants absents.
+
+    since_hours : mode incrémental, uniquement les offres créées depuis N heures
+    (runs légers horaires) — quelques requêtes au lieu d'un passage complet.
+    """
     client_id = os.environ.get("FT_CLIENT_ID", "")
     client_secret = os.environ.get("FT_CLIENT_SECRET", "")
     if not client_id or not client_secret:
         print("France Travail : FT_CLIENT_ID/FT_CLIENT_SECRET absents, source ignorée.", file=sys.stderr)
         return []
+
+    window = {}
+    if since_hours:
+        from datetime import datetime, timedelta, timezone
+        now = datetime.now(timezone.utc)
+        window = {
+            "minCreationDate": (now - timedelta(hours=since_hours)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "maxCreationDate": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
 
     client = FranceTravailClient(client_id, client_secret)
     seen: dict[str, dict] = {}
@@ -201,9 +214,9 @@ def fetch_france_travail() -> list[dict]:
 
     try:
         for domaine in DOMAINES:
-            collect({"domaine": domaine}, f"domaine={domaine}")
+            collect(dict(window, domaine=domaine), f"domaine={domaine}")
         for mots in MOTS_CLES:
-            collect({"motsCles": mots}, f"mots={mots}")
+            collect(dict(window, motsCles=mots), f"mots={mots}")
     except Exception as exc:  # noqa: BLE001 - une panne FT ne doit pas stopper le run quotidien
         print(
             f"France Travail : échec ({type(exc).__name__}: {exc}), "

@@ -10,17 +10,15 @@ Architecture en trois couches pour que le backend d'abonnés soit remplaçable
 Un abonné = {"email", "criteres": {q, contrats, remote, region, employeur,
 salaire_min}, "premium": bool}.
 
-Deux paliers d'envoi :
-    --tier premium : calcule le diff des nouvelles offres, l'écrit dans
-                     data/new_jobs.json, et n'envoie qu'aux abonnés PREMIUM
-                     (une heure avant la publication du site).
-    --tier free    : relit data/new_jobs.json (pas de recalcul) et envoie aux
-                     abonnés gratuits, au moment de la publication.
-    --tier all     : diff + envoi à tout le monde (runs manuels).
+Le diff des nouveautés (data/new_jobs.json) est calculé par scripts.build,
+qui applique aussi l'embargo de publication : les emails partent immédiatement,
+le site n'affiche l'offre qu'EMBARGO_MINUTES plus tard.
 
-Usage :
-    python -m scripts.newsletter --dry-run     # détection + matching, aucun envoi
-    python -m scripts.newsletter --tier all    # envoi réel (BREVO_API_KEY requis)
+Paliers d'envoi :
+    --tier premium            : abonnés PREMIUM, nouveautés du run courant.
+    --tier all                : tous les abonnés, nouveautés du run courant.
+    --tier free --from-prod   : abonnés gratuits, nouveautés du déploiement
+                                précédent (dont l'embargo vient d'être levé).
 """
 
 from __future__ import annotations
@@ -63,25 +61,6 @@ def fetch_previous_seen() -> dict[str, str]:
         pass
     return {}
 
-
-def detect_new(jobs: list[dict]) -> tuple[list[dict], dict[str, str]]:
-    """Retourne (nouvelles offres, seen mis à jour). Sans état précédent,
-    aucune offre n'est 'nouvelle' (évite d'envoyer 20 000 offres au premier run)."""
-    seen = fetch_previous_seen()
-    today = date.today().isoformat()
-    first_run = not seen
-
-    new_jobs = [] if first_run else [j for j in jobs if j["id"] not in seen]
-
-    cutoff = (date.today() - timedelta(days=SEEN_MAX_AGE_DAYS)).isoformat()
-    updated = {jid: d for jid, d in seen.items() if d >= cutoff}
-    for job in jobs:
-        updated.setdefault(job["id"], today)
-    return new_jobs, updated
-
-
-def write_seen(seen: dict[str, str]) -> None:
-    (DATA_DIR / "seen_ids.json").write_text(json.dumps({"ids": seen}))
 
 
 # ---------- Matching (mêmes règles que le front) ----------
@@ -191,22 +170,19 @@ NEW_JOBS_PATH = DATA_DIR / "new_jobs.json"
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="détection et matching sans envoi")
+    parser.add_argument("--dry-run", action="store_true", help="matching sans envoi")
     parser.add_argument("--tier", choices=["all", "premium", "free"], default="all")
     args = parser.parse_args()
 
-    if args.tier == "free":
-        # Le diff a été calculé (et l'état seen écrit) par la passe premium du même run.
-        if not NEW_JOBS_PATH.exists():
-            print("Newsletter [free] : pas de new_jobs.json, rien à envoyer.", file=sys.stderr)
-            return
-        new_jobs = json.loads(NEW_JOBS_PATH.read_text())
-    else:
-        jobs = load_jobs()
-        new_jobs, seen = detect_new(jobs)
-        write_seen(seen)
-        NEW_JOBS_PATH.write_text(json.dumps(new_jobs, ensure_ascii=False))
-    print(f"Newsletter [{args.tier}] : {len(new_jobs)} nouvelles offres depuis le dernier run", file=sys.stderr)
+    # Les diffs sont calculés par scripts.build (stamp_and_diff) : new_jobs.json
+    # (nouveautés du run, sous embargo) pour premium/all, published_now.json
+    # (embargo tout juste levé) pour le palier gratuit.
+    source_path = DATA_DIR / ("published_now.json" if args.tier == "free" else "new_jobs.json")
+    if not source_path.exists():
+        print(f"Newsletter [{args.tier}] : {source_path.name} absent, rien à envoyer.", file=sys.stderr)
+        return
+    new_jobs = json.loads(source_path.read_text())
+    print(f"Newsletter [{args.tier}] : {len(new_jobs)} nouvelles offres", file=sys.stderr)
     if not new_jobs:
         return
 

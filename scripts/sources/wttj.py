@@ -69,6 +69,7 @@ class _WttjClient:
             "Referer": REFERER,
             "Origin": "https://www.welcometothejungle.com",
         })
+        self.since_ts: int | None = None
 
     def query(self, facet_filters: list, *, page: int = 0, hits_per_page: int = HITS_PER_PAGE,
               facets: list[str] | None = None) -> dict:
@@ -81,6 +82,8 @@ class _WttjClient:
             "attributesToHighlight": [],
             "analytics": False,
         }
+        if self.since_ts:
+            body["numericFilters"] = [f"published_at_timestamp >= {self.since_ts}"]
         if facets:
             body["facets"] = facets
         resp = self.session.post(QUERY_URL, json=body, timeout=30)
@@ -197,9 +200,15 @@ def _collect_segment(client: _WttjClient, filters: list, split_level: int, seen:
         page += 1
 
 
-def fetch_wttj() -> list[dict]:
-    """Récupère les offres tech/produit France de WTTJ. Retourne [] en cas d'échec."""
+def fetch_wttj(since_hours: int | None = None) -> list[dict]:
+    """Récupère les offres tech/produit France de WTTJ. Retourne [] en cas d'échec.
+
+    since_hours : mode incrémental (runs légers), uniquement les offres publiées
+    depuis N heures — une poignée de requêtes.
+    """
     client = _WttjClient()
+    if since_hours:
+        client.since_ts = int(time.time()) - since_hours * 3600
     seen: dict[str, dict] = {}
     try:
         for category in CATEGORIES:

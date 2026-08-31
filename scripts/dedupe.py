@@ -40,12 +40,14 @@ def _company_key(entreprise: str) -> str:
 
 
 def _fill_missing(winner: dict, loser: dict) -> None:
+    # .get partout : les offres rechargées depuis les chunks publiés n'ont plus
+    # certains champs privés (_description) ni forcément les champs récents.
     for field in ("salaire_min", "salaire_max", "tjm_min", "tjm_max", "lat", "lon"):
-        if winner[field] is None and loser[field] is not None:
+        if winner.get(field) is None and loser.get(field) is not None:
             winner[field] = loser[field]
     for field in ("contrat", "teletravail", "ville", "departement", "region", "date_publication",
                   "extrait", "_description"):
-        if not winner[field] and loser[field]:
+        if not winner.get(field) and loser.get(field):
             winner[field] = loser[field]
     for tag in loser["tags"]:
         if tag not in winner["tags"] and len(winner["tags"]) < 12:

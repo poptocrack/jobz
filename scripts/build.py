@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import os
 import sys
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
@@ -38,7 +39,7 @@ def load_companies() -> list[dict]:
     return json.loads(path.read_text())["companies"]
 
 
-def collect(skip: set[str]) -> tuple[list[dict], dict]:
+def collect(skip: set[str], since_hours: int | None = None) -> tuple[list[dict], dict]:
     jobs: list[dict] = []
     errors: dict = {}
 
@@ -48,12 +49,26 @@ def collect(skip: set[str]) -> tuple[list[dict], dict]:
         jobs.extend(ats_jobs)
         errors["ats"] = ats_errors
     if "france_travail" not in skip:
-        jobs.extend(fetch_france_travail())
+        jobs.extend(fetch_france_travail(since_hours))
     if "wttj" not in skip:
-        jobs.extend(fetch_wttj())
+        jobs.extend(fetch_wttj(since_hours))
     if "adzuna" not in skip:
-        jobs.extend(fetch_adzuna())
+        jobs.extend(fetch_adzuna(since_hours))
     return jobs, errors
+
+
+def load_existing(out_dir: Path) -> list[dict]:
+    """Charge le jeu de données du run précédent (runs légers : base de fusion)."""
+    manifest_path = out_dir / "manifest.json"
+    if not manifest_path.exists():
+        return []
+    jobs: list[dict] = []
+    for chunk in json.loads(manifest_path.read_text())["chunks"]:
+        path = out_dir / chunk["file"]
+        if path.exists():
+            jobs.extend(json.loads(gzip.decompress(path.read_bytes())))
+    print(f"Base existante : {len(jobs)} offres", file=sys.stderr)
+    return jobs
 
 
 def prune(jobs: list[dict], max_age_days: int) -> list[dict]:
@@ -92,27 +107,79 @@ def build_stats(jobs: list[dict], errors: dict) -> dict:
     }
 
 
-def stamp_first_seen(jobs: list[dict]) -> None:
-    """Date de première observation par NOTRE pipeline (signal honnête d'ancienneté,
-    contrairement à date_publication que les reposts rajeunissent)."""
+SEEN_MAX_AGE_DAYS = 60
+
+
+def stamp_and_diff(jobs: list[dict], out_dir: Path) -> set[str]:
+    """Première observation par NOTRE pipeline + diff des nouveautés.
+
+    - premiere_vue (date) posée sur chaque offre : signal honnête d'ancienneté,
+      contrairement à date_publication que les reposts rajeunissent.
+    - Écrit seen_ids.json (horodatages ISO) et new_jobs.json (offres jamais vues,
+      consommées par la newsletter).
+    - Retourne les ids sous EMBARGO_MINUTES (exclus de la publication : les
+      abonnés reçoivent l'offre avant qu'elle apparaisse sur le site).
+    """
     from scripts.newsletter import fetch_previous_seen
     seen = fetch_previous_seen()
-    today = date.today().isoformat()
+    first_run = not seen
+    now = datetime.now(timezone.utc)
+    now_iso = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    embargo_minutes = int(os.environ.get("EMBARGO_MINUTES", "0") or 0)
+
+    cutoff = (date.today() - timedelta(days=SEEN_MAX_AGE_DAYS)).isoformat()
+    updated = {jid: ts for jid, ts in seen.items() if ts[:10] >= cutoff}
+
+    new_jobs, published_now, embargoed = [], [], set()
     for job in jobs:
-        job["premiere_vue"] = seen.get(job["id"], today)
+        ts = updated.get(job["id"])
+        if ts is None:
+            updated[job["id"]] = now_iso
+            job["premiere_vue"] = now_iso[:10]
+            if not first_run:
+                new_jobs.append(job)
+                if embargo_minutes:
+                    embargoed.add(job["id"])
+        else:
+            job["premiere_vue"] = ts[:10]
+            if embargo_minutes and len(ts) > 10:
+                age_min = (now - datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)).total_seconds() / 60
+                if age_min < embargo_minutes:
+                    embargoed.add(job["id"])
+                elif age_min < embargo_minutes + 90:
+                    # Embargo levé depuis ce run (ou presque) : cible du palier gratuit.
+                    published_now.append(job)
 
-
-def write_output(jobs: list[dict], out_dir: Path, errors: dict) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "seen_ids.json").write_text(json.dumps({"ids": updated}))
+    # Fichiers LOCAUX du run (jamais publiés : ils contiennent les offres sous embargo).
+    (out_dir / "new_jobs.json").write_text(json.dumps(new_jobs, ensure_ascii=False))
+    (out_dir / "published_now.json").write_text(json.dumps(published_now, ensure_ascii=False))
+    print(f"Diff : {len(new_jobs)} nouvelles, {len(embargoed)} sous embargo ({embargo_minutes} min), "
+          f"{len(published_now)} tout juste publiées", file=sys.stderr)
+    return embargoed
+
+
+def write_output(jobs: list[dict], out_dir: Path, errors: dict, exclude_ids: set[str] | None = None) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if exclude_ids:
+        jobs = [j for j in jobs if j["id"] not in exclude_ids]
     jobs.sort(key=lambda j: j["date_publication"] or "0000", reverse=True)
 
     # Descriptions longues : réservées aux pages SEO, jamais dans les chunks du front.
+    # En run léger, on fusionne avec le store existant (les offres de la base
+    # n'ont plus leur _description en mémoire).
     descriptions = {}
+    desc_path = out_dir / "descriptions.json.gz"
+    if desc_path.exists():
+        descriptions = json.loads(gzip.decompress(desc_path.read_bytes()))
     for job in jobs:
         desc = job.pop("_description", "")
         if desc:
             descriptions[job["id"]] = desc
-    (out_dir / "descriptions.json.gz").write_bytes(
+    current_ids = {j["id"] for j in jobs}
+    descriptions = {jid: d for jid, d in descriptions.items() if jid in current_ids}
+    desc_path.write_bytes(
         gzip.compress(json.dumps(descriptions, ensure_ascii=False).encode(), compresslevel=9)
     )
 
@@ -140,10 +207,21 @@ def main() -> None:
     parser.add_argument("--out", default=str(ROOT / "data"))
     parser.add_argument("--skip-sources", default="", help="ex: wttj,adzuna,ats,france_travail")
     parser.add_argument("--max-age-days", type=int, default=45)
+    parser.add_argument("--light", action="store_true",
+                        help="run incrémental : delta FT/WTTJ/Adzuna fusionné avec les données existantes")
     args = parser.parse_args()
+    out_dir = Path(args.out)
 
     skip = {s.strip() for s in args.skip_sources.split(",") if s.strip()}
-    jobs, errors = collect(skip)
+    since_hours = None
+    base_jobs: list[dict] = []
+    if args.light:
+        skip.add("ats")
+        since_hours = 2
+        base_jobs = load_existing(out_dir)
+
+    jobs, errors = collect(skip, since_hours)
+    jobs = base_jobs + jobs
     jobs = prune(jobs, args.max_age_days)
     pair_stats: dict = {}
     jobs = dedupe(jobs, pair_stats)
@@ -152,9 +230,9 @@ def main() -> None:
     errors["doublons"] = pair_stats
     classify_employers(jobs)
     enrich_geo(jobs)
-    stamp_first_seen(jobs)
-    write_output(jobs, Path(args.out), errors)
-    write_analytics(jobs, Path(args.out))
+    embargoed = stamp_and_diff(jobs, out_dir)
+    write_output(jobs, out_dir, errors, exclude_ids=embargoed)
+    write_analytics(jobs, out_dir)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
-name: Scrape & Deploy
+name: Scrape léger (horaire)
 
+# Run incrémental : delta France Travail / WTTJ / Adzuna des 2 dernières heures,
+# fusionné avec les données déjà en prod. Les boards ATS restent sur les
+# 3 collectes complètes. Latence des nouvelles offres : ~1 h au lieu de ~4 h.
 on:
   schedule:
-    - cron: "0 5 * * *"  # ~06h/07h Paris selon la saison
-    - cron: "0 11 * * *" # ~12h/13h Paris
-    - cron: "0 17 * * *" # ~18h/19h Paris
+    - cron: "0 0-4,6-10,12-16,18-23 * * *" # toutes les heures sauf les collectes complètes
   workflow_dispatch:
 
 permissions:
@@ -19,14 +20,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-
       - run: pip install -r requirements.txt
 
       - name: Restaurer le cache de géocodage
@@ -36,36 +36,27 @@ jobs:
           key: geo-cache-${{ github.run_id }}
           restore-keys: geo-cache-
 
-      - name: Construire les données
+      - name: Récupérer les données de prod
+        run: python scripts/fetch_prod_data.py data
+
+      - name: Delta incrémental
         env:
           FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
           FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
-          # Embargo : les emails partent tout de suite, le site affiche l'offre 1 h après.
           EMBARGO_MINUTES: "60"
-        run: python -m scripts.build
+        run: python -m scripts.build --light
 
-      # --- Newsletter ---
-      # Tant que PREMIUM_ENABLED n'est pas 'true' : tout le monde reçoit les
-      # alertes avant la publication (offre de lancement). Une fois activé :
-      # premium d'abord, gratuits au moment de la publication.
-      - name: Sync premium (Stripe)
-        if: vars.PREMIUM_ENABLED == 'true'
-        env:
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
-        run: python -m scripts.stripe_sync
-
-      - name: Newsletter (tous les abonnés, avant-première)
-        if: vars.PREMIUM_ENABLED != 'true'
-        env:
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          BREVO_LIST_ID: ${{ vars.BREVO_LIST_ID }}
-          BREVO_SENDER_EMAIL: ${{ vars.BREVO_SENDER_EMAIL }}
-          BREVO_SENDER_NAME: tech-jobz
-        run: python -m scripts.newsletter --tier all
+      - name: Vérifier le volume minimal
+        run: |
+          python - <<'EOF'
+          import json, sys
+          manifest = json.load(open("data/manifest.json"))
+          if manifest["total"] < 2000:
+              sys.exit(f"Volume anormalement bas ({manifest['total']}), déploiement annulé.")
+          print(f"{manifest['total']} offres")
+          EOF
 
       - name: Newsletter premium (avant-première)
         if: vars.PREMIUM_ENABLED == 'true'
@@ -76,18 +67,6 @@ jobs:
           BREVO_SENDER_NAME: tech-jobz
         run: python -m scripts.newsletter --tier premium
 
-      - name: Vérifier le volume minimal
-        run: |
-          python - <<'EOF'
-          import json, sys
-          manifest = json.load(open("data/manifest.json"))
-          total = manifest["total"]
-          print(f"{total} offres — sources: {manifest['stats']['par_source']}")
-          if total < 2000:
-              sys.exit(f"Volume anormalement bas ({total} offres), déploiement annulé.")
-          EOF
-
-      # Palier gratuit : offres du déploiement précédent, dont l'embargo est levé.
       - name: Newsletter gratuite (à la publication)
         if: vars.PREMIUM_ENABLED == 'true'
         env:

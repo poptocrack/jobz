@@ -92,9 +92,29 @@ def build_stats(jobs: list[dict], errors: dict) -> dict:
     }
 
 
+def stamp_first_seen(jobs: list[dict]) -> None:
+    """Date de première observation par NOTRE pipeline (signal honnête d'ancienneté,
+    contrairement à date_publication que les reposts rajeunissent)."""
+    from scripts.newsletter import fetch_previous_seen
+    seen = fetch_previous_seen()
+    today = date.today().isoformat()
+    for job in jobs:
+        job["premiere_vue"] = seen.get(job["id"], today)
+
+
 def write_output(jobs: list[dict], out_dir: Path, errors: dict) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     jobs.sort(key=lambda j: j["date_publication"] or "0000", reverse=True)
+
+    # Descriptions longues : réservées aux pages SEO, jamais dans les chunks du front.
+    descriptions = {}
+    for job in jobs:
+        desc = job.pop("_description", "")
+        if desc:
+            descriptions[job["id"]] = desc
+    (out_dir / "descriptions.json.gz").write_bytes(
+        gzip.compress(json.dumps(descriptions, ensure_ascii=False).encode(), compresslevel=9)
+    )
 
     chunks = []
     for i in range(0, max(len(jobs), 1), CHUNK_SIZE):
@@ -132,6 +152,7 @@ def main() -> None:
     errors["doublons"] = pair_stats
     classify_employers(jobs)
     enrich_geo(jobs)
+    stamp_first_seen(jobs)
     write_output(jobs, Path(args.out), errors)
     write_analytics(jobs, Path(args.out))
 

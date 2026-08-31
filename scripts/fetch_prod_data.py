@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 
 SITE_URL = os.environ.get("SITE_URL", "https://poptocrack.github.io/jobz/")
-EXTRAS = ["analytics.json", "history.json", "seen_ids.json"]
+EXTRAS = ["analytics.json", "history.json", "seen_ids.json", "descriptions.json.gz"]
 
 
 def fetch(name: str) -> bytes:

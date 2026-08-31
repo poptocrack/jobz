@@ -5,6 +5,15 @@
 import { phInit } from "./ph.js";
 phInit();
 
+document.getElementById("theme-toggle")?.addEventListener("click", () => {
+  const root = document.documentElement;
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = root.dataset.theme === "dark" || (!root.dataset.theme && systemDark);
+  root.dataset.theme = isDark ? "light" : "dark";
+  try { localStorage.setItem("jobz_theme", root.dataset.theme); } catch { /* mémoire session */ }
+  location.reload(); // les couleurs des graphiques sont lues au chargement
+});
+
 const $ = (id) => document.getElementById(id);
 
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();

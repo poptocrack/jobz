@@ -21,6 +21,7 @@ Schéma canonique d'une offre (dict) :
 from __future__ import annotations
 
 import hashlib
+import html as _html
 import re
 import unicodedata
 
@@ -184,6 +185,20 @@ def parse_salary(raw: str) -> tuple[int | None, int | None]:
     return details["annual_min"], details["annual_max"]
 
 
+_HTML_TAG = re.compile(r"<[^>]+>")
+
+
+def clean_excerpt(text: str, max_len: int = 180) -> str:
+    """Extrait lisible : entités et HTML retirés, espaces normalisés, coupé au mot."""
+    text = _html.unescape(_html.unescape(text or ""))
+    text = _HTML_TAG.sub(" ", text)
+    text = re.sub(r"[\s\xa0]+", " ", text).strip()
+    if len(text) <= max_len:
+        return text
+    cut = text[:max_len].rsplit(" ", 1)[0]
+    return cut + "…"
+
+
 def extract_tags(text: str) -> list[str]:
     found = []
     for tag, tag_re in _TAG_RES:
@@ -268,4 +283,8 @@ def make_job(
         "url": url,
         "tags": extract_tags(f"{titre}\n{description[:4000]}"),
         "employeur_type": employeur_type,
+        "extrait": clean_excerpt(description, 180),
+        # Description longue pour les pages SEO uniquement ; retirée des chunks
+        # publiés par build.write_output (préfixe _ = champ privé du pipeline).
+        "_description": clean_excerpt(description, 1500),
     }

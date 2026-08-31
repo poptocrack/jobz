@@ -48,11 +48,17 @@ export function isNew(job) {
   return Date.now() - new Date(job.date_publication + "T12:00:00").getTime() < 2 * DAY_MS;
 }
 
+function ageDays(job) {
+  if (!job.premiere_vue) return null;
+  return Math.floor((Date.now() - new Date(job.premiere_vue + "T12:00:00").getTime()) / DAY_MS);
+}
+
 function jobCard(job) {
   const status = getStatus(job.id);
   const place = [job.ville, job.region && job.ville !== job.region ? job.region : ""]
     .filter(Boolean).join(", ");
   const salary = formatSalary(job);
+  const age = ageDays(job);
 
   const badges = [
     isNew(job) ? `<span class="badge new">Nouvelle</span>` : "",
@@ -62,6 +68,10 @@ function jobCard(job) {
     job.teletravail === "total" ? `<span class="badge">Full remote</span>` : "",
     job.teletravail === "hybride" ? `<span class="badge">Hybride</span>` : "",
     salary ? `<span class="badge salaire">${salary}</span>` : "",
+    // Ancienneté RÉELLE (première observation par jobz), insensible aux reposts.
+    age !== null && age > 30
+      ? `<span class="badge age" title="Suivie par jobz depuis ${age} jours, malgré sa date de publication affichée">en ligne depuis ${age} j</span>`
+      : "",
     ...job.tags.slice(0, 5).map((t) => `<span class="badge tag">${escapeHtml(t)}</span>`),
   ].filter(Boolean).join("");
 
@@ -76,6 +86,7 @@ function jobCard(job) {
         <div class="job-sub">
           <span class="company">${escapeHtml(job.entreprise)}</span>${place ? " · " + escapeHtml(place) : ""}
         </div>
+        ${job.extrait ? `<p class="job-extrait">${escapeHtml(job.extrait)}</p>` : ""}
         <div class="badges">${badges}</div>
       </div>
       <div class="job-side">

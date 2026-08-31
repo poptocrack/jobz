@@ -8,6 +8,7 @@ sont défensifs (.get) pour qu'un tenant exotique ne casse pas le run.
 
 from __future__ import annotations
 
+import html as html_mod
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -72,7 +73,11 @@ def _iso_date(value) -> str:
 
 
 def fetch_greenhouse(session, company) -> list[dict]:
-    data = get_json(session, f"https://boards-api.greenhouse.io/v1/boards/{company['slug']}/jobs")
+    data = get_json(
+        session,
+        f"https://boards-api.greenhouse.io/v1/boards/{company['slug']}/jobs",
+        params={"content": "true"},
+    )
     jobs = []
     for job in (data or {}).get("jobs", []):
         location = (job.get("location") or {}).get("name", "")
@@ -86,6 +91,7 @@ def fetch_greenhouse(session, company) -> list[dict]:
             url=job.get("absolute_url", ""),
             ville=location,
             date_publication=_iso_date(job.get("updated_at") or job.get("first_published")),
+            description=html_mod.unescape(job.get("content") or "")[:6000],
         ))
     return jobs
 
@@ -150,6 +156,7 @@ def fetch_ashby(session, company) -> list[dict]:
             salaire_min=sal_min,
             salaire_max=sal_max,
             date_publication=_iso_date(job.get("publishedAt") or job.get("publishedDate")),
+            description=(job.get("descriptionHtml") or "")[:6000],
         ))
     return jobs
 

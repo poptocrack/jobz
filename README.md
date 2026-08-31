@@ -1,9 +1,25 @@
-# jobz — L'emploi tech en France
+# jobz — Tout l'emploi tech en France
 
-Agrégateur d'offres d'emploi tech centré sur le marché français : startups, scale-ups et
-entreprises, toutes sources confondues, mis à jour quotidiennement. Équivalent français de
-[job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator), repensé pour le
-paysage ATS français.
+**[poptocrack.github.io/jobz](https://poptocrack.github.io/jobz/)** — 18 000+ offres d'emploi
+tech **françaises**, agrégées depuis France Travail, Welcome to the Jungle et plus de 1 400
+sites carrière d'entreprises, actualisées 3 fois par jour.
+
+Ce qui le distingue des agrégateurs remote/mondiaux :
+
+- **France-first** : sources françaises officielles (API France Travail), géographie par
+  région/département, contrats français (CDI, CDD, alternance, stage, freelance).
+- **Client final vs ESN** : chaque offre est classée employeur direct ou prestataire
+  (ESN/conseil/intérim), le filtre que tous les devs français réclament.
+- **Salaires honnêtes** : fourchettes en k€ brut/an, TJM en €/jour pour le freelance,
+  garde-fous contre les montants aberrants ; ancienneté réelle des offres (détection
+  des annonces qui traînent, insensible aux reposts).
+- **[Page Analyse](https://poptocrack.github.io/jobz/analyse.html)** : technos demandées,
+  salaires médians par techno et par contrat, TJM, régions, recalculés à chaque collecte.
+- **Alertes email** : les nouvelles offres qui matchent votre recherche, une heure avant
+  leur publication sur le site (double opt-in).
+
+Inspiré de [job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator),
+entièrement repensé pour le paysage français.
 
 Architecture 100 % statique : pipeline Python quotidien (GitHub Actions) qui produit des
 JSON gzippés, servis avec un front vanilla JS sur GitHub Pages. Zéro serveur, zéro coût.

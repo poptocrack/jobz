@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   discover:
@@ -36,14 +37,23 @@ jobs:
             sleep 60
           done
 
-      - name: Commiter les ajouts
+      # main est protégé (PR obligatoire) : les ajouts passent par une PR auto-fusionnée.
+      - name: Ouvrir et fusionner la PR des ajouts
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add companies.json
           if git diff --cached --quiet; then
             echo "Aucune nouvelle entreprise."
-          else
-            git commit -m "Découverte : nouvelles entreprises FR via Common Crawl"
-            git push
+            exit 0
           fi
+          BRANCH="discovery/$(date +%Y%m%d-%H%M)"
+          git checkout -b "$BRANCH"
+          git commit -m "Découverte : nouvelles entreprises FR via Common Crawl"
+          git push origin "$BRANCH"
+          gh pr create --title "Découverte : nouvelles entreprises FR" \
+            --body "Ajouts automatiques du workflow de découverte Common Crawl (sondés : ≥1 offre FR chacun)." \
+            --base main --head "$BRANCH"
+          gh pr merge "$BRANCH" --squash --delete-branch --auto

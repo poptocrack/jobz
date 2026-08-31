@@ -191,6 +191,14 @@ function wireControls() {
     const open = panel.classList.toggle("open");
     $("filters-toggle").setAttribute("aria-expanded", String(open));
   });
+
+  $("theme-toggle")?.addEventListener("click", () => {
+    const root = document.documentElement;
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = root.dataset.theme === "dark" || (!root.dataset.theme && systemDark);
+    root.dataset.theme = isDark ? "light" : "dark";
+    try { localStorage.setItem("jobz_theme", root.dataset.theme); } catch { /* mémoire session */ }
+  });
 }
 
 async function init() {
@@ -229,6 +237,14 @@ async function init() {
     wireControls();
     syncControls();
     initNewsletterForm();
+
+    // Liens segments SEO dans le footer (générés au build).
+    fetch(new URL("data/seo_links.json", location.href)).catch(() => null).then(async (resp) => {
+      if (!resp?.ok) return;
+      const links = await resp.json();
+      $("seo-links").innerHTML = links
+        .map((l) => `<a href="${l.url}">${l.label}</a>`).join("");
+    }).catch(() => {});
     if (state.view === "map") setView("map");
     else render({ resetPage: false });
   } catch (err) {

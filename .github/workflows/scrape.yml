@@ -106,6 +106,9 @@ jobs:
           cp -r site/* _site/
           cp data/manifest.json data/analytics.json data/history.json data/seen_ids.json data/*.json.gz _site/data/
 
+      - name: Pages SEO (offres, segments, sitemap)
+        run: python -m scripts.seo --data data --out _site
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

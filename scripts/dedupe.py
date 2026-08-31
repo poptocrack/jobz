@@ -43,7 +43,8 @@ def _fill_missing(winner: dict, loser: dict) -> None:
     for field in ("salaire_min", "salaire_max", "tjm_min", "tjm_max", "lat", "lon"):
         if winner[field] is None and loser[field] is not None:
             winner[field] = loser[field]
-    for field in ("contrat", "teletravail", "ville", "departement", "region", "date_publication"):
+    for field in ("contrat", "teletravail", "ville", "departement", "region", "date_publication",
+                  "extrait", "_description"):
         if not winner[field] and loser[field]:
             winner[field] = loser[field]
     for tag in loser["tags"]:

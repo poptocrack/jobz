@@ -20,6 +20,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -165,6 +166,7 @@ def run_from_file(path: str) -> None:
     hits = probe_candidates(new)
     for hit in hits:
         hit["name"] = hit["name"].replace("-", " ").title()
+        hit["strict"] = True
     added, total = merge_hits(hits)
     print(f"{len(hits)} confirmés FR, {added} ajoutés, {total} au total")
 
@@ -178,12 +180,21 @@ def run_common_crawl(ats: str, max_pages: int) -> None:
 
     slugs: set[str] = set()
     for page in range(max_pages):
-        resp = session.get(
-            f"https://index.commoncrawl.org/{latest}-index",
-            params={"url": pattern, "output": "json", "page": page, "fl": "url"},
-            timeout=60,
-        )
-        if resp.status_code != 200:
+        # L'index Common Crawl est souvent surchargé : retries avec backoff.
+        resp = None
+        for attempt in range(4):
+            try:
+                resp = session.get(
+                    f"https://index.commoncrawl.org/{latest}-index",
+                    params={"url": pattern, "output": "json", "page": page, "fl": "url"},
+                    timeout=120,
+                )
+                break
+            except Exception as exc:  # noqa: BLE001
+                print(f"  CC page {page} tentative {attempt + 1} : {type(exc).__name__}", file=sys.stderr)
+                time.sleep(15 * (attempt + 1))
+        if resp is None or resp.status_code != 200:
+            print(f"  CC page {page} abandonnée", file=sys.stderr)
             break
         for line in resp.text.splitlines():
             try:
@@ -202,6 +213,9 @@ def run_common_crawl(ats: str, max_pages: int) -> None:
     hits = probe_candidates(candidates)
     for hit in hits:
         hit["name"] = hit["name"].replace("-", " ").title()
+        # Entreprise découverte (pas du seed vérifié) : filtre France strict,
+        # un "Remote" sans pays ne suffit pas.
+        hit["strict"] = True
     added, total = merge_hits(hits)
     print(f"{len(hits)} confirmés FR, {added} ajoutés, {total} au total")
 

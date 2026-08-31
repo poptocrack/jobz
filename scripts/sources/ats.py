@@ -76,7 +76,7 @@ def fetch_greenhouse(session, company) -> list[dict]:
     jobs = []
     for job in (data or {}).get("jobs", []):
         location = (job.get("location") or {}).get("name", "")
-        if not is_france_location(location):
+        if not is_france_location(location, allow_bare_remote=not company.get("strict")):
             continue
         jobs.append(make_job(
             source="greenhouse",
@@ -99,7 +99,7 @@ def fetch_lever(session, company) -> list[dict]:
         country = job.get("country", "")
         if country and country.upper() != "FR" and not is_france_location(location, allow_bare_remote=False):
             continue
-        if not country and not is_france_location(location):
+        if not country and not is_france_location(location, allow_bare_remote=not company.get("strict")):
             continue
         salary = job.get("salaryRange") or {}
         sal_min, sal_max = salary.get("min"), salary.get("max")
@@ -134,7 +134,7 @@ def fetch_ashby(session, company) -> list[dict]:
             loc.get("location", "") for loc in job.get("secondaryLocations") or []
         ]
         location = ", ".join(l for l in locations if l)
-        if not is_france_location(location, allow_bare_remote=bool(job.get("isRemote"))):
+        if not is_france_location(location, allow_bare_remote=bool(job.get("isRemote")) and not company.get("strict")):
             continue
         comp = ((job.get("compensation") or {}).get("compensationTierSummary")) or ""
         sal_min, sal_max = parse_salary(comp) if "€" in comp or "EUR" in comp else (None, None)
@@ -161,7 +161,7 @@ def fetch_recruitee(session, company) -> list[dict]:
         country = job.get("country", "")
         location = ", ".join(p for p in (job.get("city", ""), country) if p)
         is_fr = strip_accents(country.lower()) == "france" or is_france_location(location)
-        if not is_fr and not (job.get("remote") and not country):
+        if not is_fr and not (job.get("remote") and not country and not company.get("strict")):
             continue
         jobs.append(make_job(
             source="recruitee",
@@ -217,7 +217,7 @@ def fetch_workable(session, company) -> list[dict]:
         country = (job.get("country") or "").lower()
         location = ", ".join(p for p in (job.get("city", ""), job.get("country", "")) if p)
         is_fr = country in ("france", "fr") or is_france_location(location, allow_bare_remote=False)
-        if not is_fr and not (job.get("telecommuting") and not country):
+        if not is_fr and not (job.get("telecommuting") and not country and not company.get("strict")):
             continue
         jobs.append(make_job(
             source="workable",

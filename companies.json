@@ -1,10 +1,108 @@
 {
   "companies": [
     {
+      "name": "0X",
+      "ats": "ashby",
+      "slug": "0x",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
       "name": "360Learning",
       "ats": "lever",
       "slug": "360learning",
       "fr_jobs_at_probe": 12
+    },
+    {
+      "name": "3E",
+      "ats": "ashby",
+      "slug": "3e",
+      "fr_jobs_at_probe": 3,
+      "strict": true
+    },
+    {
+      "name": "829Studios",
+      "ats": "ashby",
+      "slug": "829studios",
+      "fr_jobs_at_probe": 16,
+      "strict": true
+    },
+    {
+      "name": "A Place For Mom",
+      "ats": "ashby",
+      "slug": "a-place-for-mom",
+      "fr_jobs_at_probe": 3,
+      "strict": true
+    },
+    {
+      "name": "A Team",
+      "ats": "ashby",
+      "slug": "a-team",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
+      "name": "Abby Care",
+      "ats": "ashby",
+      "slug": "abby-care",
+      "fr_jobs_at_probe": 3,
+      "strict": true
+    },
+    {
+      "name": "Abridge",
+      "ats": "ashby",
+      "slug": "abridge",
+      "fr_jobs_at_probe": 4,
+      "strict": true
+    },
+    {
+      "name": "Absorblms",
+      "ats": "ashby",
+      "slug": "absorblms",
+      "fr_jobs_at_probe": 21,
+      "strict": true
+    },
+    {
+      "name": "Access",
+      "ats": "ashby",
+      "slug": "access",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
+      "name": "Accord",
+      "ats": "ashby",
+      "slug": "accord",
+      "fr_jobs_at_probe": 2,
+      "strict": true
+    },
+    {
+      "name": "Acorns",
+      "ats": "ashby",
+      "slug": "acorns",
+      "fr_jobs_at_probe": 11,
+      "strict": true
+    },
+    {
+      "name": "Adaption",
+      "ats": "ashby",
+      "slug": "adaption",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
+      "name": "Adaptivesecurity",
+      "ats": "ashby",
+      "slug": "adaptivesecurity",
+      "fr_jobs_at_probe": 3,
+      "strict": true
+    },
+    {
+      "name": "Adaptyv",
+      "ats": "ashby",
+      "slug": "adaptyv",
+      "fr_jobs_at_probe": 7,
+      "strict": true
     },
     {
       "name": "Adikteev",
@@ -13,16 +111,72 @@
       "fr_jobs_at_probe": 1
     },
     {
+      "name": "Adthena",
+      "ats": "ashby",
+      "slug": "adthena",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
+      "name": "Aduro Advisors",
+      "ats": "ashby",
+      "slug": "aduro-advisors",
+      "fr_jobs_at_probe": 4,
+      "strict": true
+    },
+    {
+      "name": "Aerovect",
+      "ats": "ashby",
+      "slug": "aerovect",
+      "fr_jobs_at_probe": 8,
+      "strict": true
+    },
+    {
+      "name": "Afterquery",
+      "ats": "ashby",
+      "slug": "afterquery",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
       "name": "Agicap",
       "ats": "lever",
       "slug": "agicap",
       "fr_jobs_at_probe": 11
     },
     {
+      "name": "Aim",
+      "ats": "ashby",
+      "slug": "aim",
+      "fr_jobs_at_probe": 4,
+      "strict": true
+    },
+    {
+      "name": "Aios",
+      "ats": "ashby",
+      "slug": "aios",
+      "fr_jobs_at_probe": 3,
+      "strict": true
+    },
+    {
+      "name": "Airapps",
+      "ats": "ashby",
+      "slug": "airapps",
+      "fr_jobs_at_probe": 47,
+      "strict": true
+    },
+    {
       "name": "Aircall",
       "ats": "lever",
       "slug": "aircall",
       "fr_jobs_at_probe": 16
+    },
+    {
+      "name": "Airwallex",
+      "ats": "ashby",
+      "slug": "airwallex",
+      "fr_jobs_at_probe": 8,
+      "strict": true
     },
     {
       "name": "Akur8",
@@ -47,6 +201,41 @@
       "ats": "lever",
       "slug": "alice-bob",
       "fr_jobs_at_probe": 24
+    },
+    {
+      "name": "Allium",
+      "ats": "ashby",
+      "slug": "allium",
+      "fr_jobs_at_probe": 2,
+      "strict": true
+    },
+    {
+      "name": "Allocate",
+      "ats": "ashby",
+      "slug": "allocate",
+      "fr_jobs_at_probe": 4,
+      "strict": true
+    },
+    {
+      "name": "Alpenlabs",
+      "ats": "ashby",
+      "slug": "alpenlabs",
+      "fr_jobs_at_probe": 1,
+      "strict": true
+    },
+    {
+      "name": "Alta Ares",
+      "ats": "ashby",
+      "slug": "alta-ares",
+      "fr_jobs_at_probe": 17,
+      "strict": true
+    },
+    {
+      "name": "Amboss",
+      "ats": "ashby",
+      "slug": "amboss",
+      "fr_jobs_at_probe": 2,
+      "strict": true
     },
     {
       "name": "Ankorstore",

@@ -187,6 +187,50 @@ def parse_salary(raw: str) -> tuple[int | None, int | None]:
 
 _HTML_TAG = re.compile(r"<[^>]+>")
 
+# Classifieur tech par intitulé, pour les sources sans filtre métier (boards ATS
+# complets). Règle : (motif tech OU techno détectée) ET PAS de motif excluant.
+_TECH_TITLE = re.compile(
+    r"d[ée]velop(?:p?eur|per)|software|logiciel|full[- ]?stack|back[- ]?end|front[- ]?end"
+    r"|\bweb\b|\bmobile\b|\bios\b|\bandroid\b|firmware|embedded|embarqu"
+    r"|\bdata\b|donn[ée]es|machine learning|\bml\b|\bia\b|\bai\b|\bllm\b|deep learning"
+    r"|devops|\bsre\b|site reliability|\bcloud\b|plateforme|platform"
+    r"|cyber|pentest|\bsoc\b|infosec|s[ée]curit[ée] (?:informatique|si|op[ée]rationnelle|des si)"
+    r"|administrat(?:eur|rice)s? (?:syst[èe]me|r[ée]seau|bases? de donn[ée]es)|sysadmin|\bdba\b"
+    r"|syst[èe]mes? d'information|\bdsi\b|informatique|\bit\b|num[ée]rique"
+    r"|architecte (?:logiciel|si|cloud|solution|technique|applicatif|data|s[ée]curit[ée])"
+    r"|product (?:manager|owner|designer)|\bux\b|\bui\b|scrum|agile"
+    r"|\bqa\b|test(?:eur|euse)?s? (?:logiciel|automat)|quality assurance|automaticien"
+    r"|business intelligence|\bbi\b|analytics"
+    r"|tech(?:nical)? lead|\bcto\b|vp engineering|head of engineering|engineering manager"
+    r"|salesforce|\bsap\b|\berp\b|\bcrm\b|blockchain|int[ée]gration|urbaniste|api\b"
+    r"|infrastructure|r[ée]seaux? et t[ée]l[ée]com|t[ée]l[ée]com|help ?desk|support (?:applicatif|informatique|it|n[123])",
+    re.IGNORECASE,
+)
+_NON_TECH_TITLE = re.compile(
+    r"commercial|sales|account (?:executive|manager)|business develop|avant[- ]vente"
+    r"|recrut|talent|\brh\b|\bhr\b|ressources humaines|paie\b"
+    r"|juridique|legal|avocat|notaire|comptab|audit(?:eur|rice)? (?:financier|l[ée]gal)|contr[ôo]leur de gestion|tr[ée]sorerie"
+    r"|marketing|communication|\bcontent\b|community|\bseo\b|\bsea\b|growth(?! engineer)"
+    r"|logistique|supply ?chain|entrep[ôo]t|magasin|retail|vendeu|caissi|drive\b"
+    r"|m[ée]canique|m[ée]catronique|nucl[ée]aire|naval|a[ée]ronautique structure|[ée]lectricit[ée]|[ée]lectrotech"
+    r"|g[ée]nie civil|\bbtp\b|chantier|c[âa]bl|soudeur|usinage|tuyauteur|chaudronn"
+    r"|maintenance industrielle|\bhse\b|\bqhse\b|achats?\b|acheteur"
+    r"|assistant(?:e)? (?:de direction|administrat|commercial|adv)|secr[ée]tariat|accueil"
+    r"|care |customer (?:success|care|support)|service client|t[ée]l[ée]conseiller"
+    r"|infirmi|m[ée]decin|aide[- ]soignant|pharmac|kin[ée]sith|psychologue"
+    r"|serveur[/ ]serveuse|cuisine|restauration|h[ôo]te(?:sse)?|m[ée]nage|nettoyage|agent d'entretien"
+    r"|chauffeur|livreur|conducteur|cariste|manutention",
+    re.IGNORECASE,
+)
+
+
+def is_tech_title(titre: str) -> bool:
+    """L'intitulé relève-t-il de la tech/IT/data/produit ?"""
+    low = strip_accents(titre or "")
+    if _NON_TECH_TITLE.search(low):
+        return False
+    return bool(_TECH_TITLE.search(low)) or bool(extract_tags(titre))
+
 
 def clean_excerpt(text: str, max_len: int = 180) -> str:
     """Extrait lisible : entités et HTML retirés, espaces normalisés, coupé au mot."""

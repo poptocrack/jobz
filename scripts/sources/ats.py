@@ -15,7 +15,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 from scripts.http_util import get_json, make_session
-from scripts.normalize import make_job, normalize_contract, normalize_remote, parse_salary, strip_accents
+from scripts.normalize import (
+    is_tech_title,
+    make_job,
+    normalize_contract,
+    normalize_remote,
+    parse_salary,
+    strip_accents,
+)
 
 _FRENCH_CITIES = [
     "paris", "lyon", "marseille", "toulouse", "bordeaux", "nantes", "lille", "nice",
@@ -266,7 +273,9 @@ def fetch_all_ats(companies: list[dict], max_workers: int = 16) -> tuple[list[di
         fetcher = FETCHERS.get(company["ats"])
         if not fetcher:
             raise ValueError(f"ATS inconnu : {company['ats']}")
-        return fetcher(_session(), company)
+        # Les boards ATS listent tous les métiers de l'entreprise : on ne garde
+        # que la tech (les autres sources ont déjà leur propre filtre métier).
+        return [j for j in fetcher(_session(), company) if is_tech_title(j["titre"])]
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {pool.submit(worker, c): c for c in companies}

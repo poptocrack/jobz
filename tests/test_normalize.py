@@ -129,6 +129,31 @@ class TestFiltreFrance:
         assert not is_france_location("Remote", allow_bare_remote=False)
 
 
+class TestClassifieurTech:
+    def test_titres_tech_acceptes(self):
+        from scripts.normalize import is_tech_title
+        for titre in [
+            "Développeur Fullstack Java/Angular", "Tech Lead java/angular",
+            "Chef de Projet Logiciel F/H", "Chef de projet IT - AMOA (H/F)",
+            "Architecte Cloud AWS", "Data Engineer Microsoft Fabric",
+            "Administrateur système Linux", "Product Owner", "Consultant SAP",
+            "Ingénieur DevOps", "QA Automation Engineer", "Testeur Automaticien",
+        ]:
+            assert is_tech_title(titre), titre
+
+    def test_titres_non_tech_exclus(self):
+        from scripts.normalize import is_tech_title
+        for titre in [
+            "Care Expert - France", "Agent d'accueil F/H",
+            "Ingénieur Commercial en vente de Solutions Digitales",
+            "Ingénieur Systèmes Nucléaires H/F", "Ingénieur d'Études Électricité Navale",
+            "Ingénieur(e) Supply Chain Quality Manager", "Business Developer",
+            "Chargé de recrutement", "Responsable Marketing Digital",
+            "Gestionnaire de paie", "Serveur/serveuse (H/F)", "Chauffeur livreur",
+        ]:
+            assert not is_tech_title(titre), titre
+
+
 class TestDivers:
     def test_slugify(self):
         assert slugify("Alice & Bob") == "alice-bob"

@@ -88,6 +88,12 @@ class TestSalaire:
     def test_plafond_plausibilite(self):
         assert parse_salary("650 000 € par an") == (None, None)
 
+    def test_fourchette_incoherente_max_ecarte(self):
+        job = make_job(source="adzuna", ref="x", titre="Dev", entreprise="Acme",
+                       url="https://a", salaire_min=30000, salaire_max=400000)
+        assert job["salaire_min"] == 30000
+        assert job["salaire_max"] is None
+
 
 class TestTags:
     def test_detection_basique(self):

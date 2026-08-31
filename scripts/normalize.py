@@ -245,6 +245,9 @@ def make_job(
     titre = re.sub(r"\s+", " ", titre or "").strip()
     if not employeur_type and detect_esn_signals(f"{titre}\n{description[:4000]}"):
         employeur_type = "esn"
+    # Fourchette incohérente (max > 3× min) : le max est du bruit, on garde le min.
+    if salaire_min and salaire_max and salaire_max > 3 * salaire_min:
+        salaire_max = None
     return {
         "id": stable_id(source, ref),
         "titre": titre,

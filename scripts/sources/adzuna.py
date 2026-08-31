@@ -57,8 +57,9 @@ def _convert(raw: dict) -> dict:
         lon=raw.get("longitude"),
         contrat=contrat,
         teletravail=normalize_remote(raw.get("title", "") + " " + description[:500]),
-        salaire_min=_plausible(raw.get("salary_min")),
-        salaire_max=_plausible(raw.get("salary_max")),
+        # Les salaires "prédits" sont des estimations ML d'Adzuna, pas ceux de l'annonce.
+        salaire_min=None if raw.get("salary_is_predicted") == "1" else _plausible(raw.get("salary_min")),
+        salaire_max=None if raw.get("salary_is_predicted") == "1" else _plausible(raw.get("salary_max")),
         date_publication=(raw.get("created") or "")[:10],
         description=description,
     )

@@ -7,7 +7,8 @@ self.onmessage = async (event) => {
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       let text;
-      if (url.endsWith(".gz")) {
+      // Le chemin (sans la query de versionnement ?v=...) décide de la décompression.
+      if (new URL(url).pathname.endsWith(".gz")) {
         const stream = resp.body.pipeThrough(new DecompressionStream("gzip"));
         text = await new Response(stream).text();
       } else {

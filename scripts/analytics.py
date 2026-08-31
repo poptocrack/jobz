@@ -53,6 +53,10 @@ def _salary_buckets(values: list[int], lo: int, hi: int, step: int) -> list[dict
 
 
 def build_analytics(jobs: list[dict]) -> dict:
+    # Conditions de l'API Adzuna : leurs données ne peuvent pas alimenter des
+    # agrégats publiés (moyennes de salaires, décomptes) sans accord écrit.
+    # La page Analyse est donc calculée hors Adzuna.
+    jobs = [j for j in jobs if j["source"] != "adzuna"]
     today = date.today()
 
     # --- Salaires annuels par contrat (midpoint des fourchettes) ---

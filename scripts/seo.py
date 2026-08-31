@@ -164,6 +164,7 @@ def write_offer_pages(jobs: list[dict], descriptions: dict, out: Path) -> int:
 <div class="badges">{tags}</div>
 <p>{esc(description or job.get('extrait') or '')}</p>
 <p><a class="btn btn-primary" href="{esc(job['url'])}" rel="nofollow noopener">Voir l'offre et postuler</a></p>
+{'<p class="seo-infos">Source : <a href="https://www.adzuna.fr" rel="noopener">Jobs by Adzuna</a></p>' if job['source'] == 'adzuna' else ''}
 <p><a href="{SITE_URL}/?q={esc(job.get('tags', [''])[0] if job.get('tags') else '')}">Voir les offres similaires sur jobz</a></p>
 """
         (page_dir / "index.html").write_text(

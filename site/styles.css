@@ -446,6 +446,9 @@ body {
   white-space: nowrap;
 }
 
+.source-attrib { color: var(--accent); text-decoration: none; }
+.source-attrib:hover { text-decoration: underline; }
+
 .track-select {
   font-size: 0.74rem;
   padding: 0.22rem 1.6rem 0.22rem 0.45rem;

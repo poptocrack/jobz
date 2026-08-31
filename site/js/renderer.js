@@ -91,7 +91,10 @@ function jobCard(job) {
       </div>
       <div class="job-side">
         <span title="${escapeHtml(job.date_publication || "")} — via ${escapeHtml(sourceLabel(job.source))}">
-          ${relativeDate(job.date_publication)} · ${escapeHtml(sourceLabel(job.source))}
+          ${relativeDate(job.date_publication)} ·
+          ${job.source === "adzuna"
+            ? '<a href="https://www.adzuna.fr" rel="noopener" target="_blank" class="source-attrib">Jobs by Adzuna</a>'
+            : escapeHtml(sourceLabel(job.source))}
         </span>
         <select class="track-select${status ? " has-status" : ""}" aria-label="Suivi de candidature">${options}</select>
       </div>

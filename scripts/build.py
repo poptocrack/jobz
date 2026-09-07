@@ -21,7 +21,7 @@ from pathlib import Path
 from scripts.analytics import write_analytics
 from scripts.dedupe import SOURCE_PRIORITY, dedupe
 from scripts.esn import is_esn_name
-from scripts.geo import enrich_geo
+from scripts.geo import clean_city, enrich_geo
 from scripts.sources.adzuna import fetch_adzuna
 from scripts.sources.ats import fetch_all_ats
 from scripts.sources.france_travail import fetch_france_travail
@@ -247,6 +247,11 @@ def main() -> None:
 
     jobs, errors = collect(skip, since_hours)
     jobs = base_jobs + jobs
+    # Avant le dédoublonnage, dont la clé contient la ville : sans ça une offre
+    # recollectée ("Paris, France") ne rejoindrait pas sa version déjà publiée
+    # ("Paris") et apparaîtrait en double.
+    for job in jobs:
+        job["ville"] = clean_city(job["ville"])
     jobs = prune(jobs, args.max_age_days)
     pair_stats: dict = {}
     jobs = dedupe(jobs, pair_stats)

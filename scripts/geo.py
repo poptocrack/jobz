@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
+import difflib
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -88,39 +90,137 @@ def region_of(dept_code: str) -> str:
     return DEPARTEMENTS.get(dept_code, ("", ""))[1]
 
 
+# Libellés que les sources mettent parfois à la place d'une ville : un pays, une
+# région, un mode de travail. L'API Adresse ne dit jamais "introuvable", elle
+# renvoie son meilleur candidat approchant : "France" y donne Fort-de-France,
+# d'où des offres full remote classées en Martinique. On les écarte en amont.
+_NON_VILLES = {
+    "france", "france entiere", "toute la france", "france metropolitaine",
+    "remote", "full remote", "teletravail", "hybride", "distanciel", "sur site",
+    "europe", "european union", "emea", "international", "monde", "worldwide",
+    "anywhere", "anywhere in france", "multi sites", "plusieurs villes",
+    "non precise", "non precisee", "a distance", "n a", "na",
+}
+_NON_VILLES |= {norm_text(region) for _, region in DEPARTEMENTS.values()}
+
+# "Nantes, Loire-Atlantique, France", "France - Remote", "Paris | Lyon"…
+_SEPARATEURS = re.compile(r"\s*[,;|/]\s*|\s+[-\u2013\u2014]\s+")
+
+
+def clean_city(raw: str) -> str:
+    """Extrait la commune d'un libellé de lieu, ou "" s'il n'y en a pas.
+
+    Renvoie le premier segment qui ressemble à une commune : "Paris, France"
+    donne "Paris", "Île-de-France, France" et "France - Remote" donnent "".
+    """
+    for part in _SEPARATEURS.split(raw or ""):
+        part = part.strip()
+        if part and norm_text(part) not in _NON_VILLES:
+            return part
+    return ""
+
+
+# Version du cache : à incrémenter quand les règles de géocodage changent, pour
+# purger les entrées produites par les règles précédentes (le cache survit aux
+# runs via actions/cache).
+CACHE_VERSION = 2
+_VERSION_KEY = "__version__"
+
+
 def _load_cache() -> dict:
-    if GEO_CACHE_PATH.exists():
-        try:
-            return json.loads(GEO_CACHE_PATH.read_text())
-        except json.JSONDecodeError:
-            return {}
-    return {}
+    if not GEO_CACHE_PATH.exists():
+        return {}
+    try:
+        cache = json.loads(GEO_CACHE_PATH.read_text())
+    except json.JSONDecodeError:
+        return {}
+    if cache.pop(_VERSION_KEY, None) != CACHE_VERSION:
+        print("Géo : cache de géocodage obsolète, reconstruction.", file=sys.stderr)
+        return {}
+    return cache
 
 
 def _save_cache(cache: dict) -> None:
     GEO_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    GEO_CACHE_PATH.write_text(json.dumps(cache, ensure_ascii=False, sort_keys=True))
+    GEO_CACHE_PATH.write_text(
+        json.dumps({**cache, _VERSION_KEY: CACHE_VERSION}, ensure_ascii=False, sort_keys=True)
+    )
 
 
-def _geocode_city(session, city: str) -> dict | None:
-    """Retourne {lat, lon, dept} pour une ville, ou None si introuvable."""
+_CODE_POSTAL = re.compile(r"^\d{5}$")
+
+
+def _cle_ville(text: str) -> str:
+    """Forme comparable d'un nom de commune : sans accents ni ligatures, sans
+    article initial, code postal ni ordinal long ("15ème" -> "15e")."""
+    key = norm_text((text or "").replace("œ", "oe").replace("æ", "ae"))
+    key = re.sub(r"\b\d{5}\b", " ", key)
+    key = re.sub(r"\b(\d+)(?:eme|ieme|er|nd|th)\b", r"\1e", key)
+    key = re.sub(r"^(le|la|les|l)\s+", "", key.strip())
+    return re.sub(r"\s+", " ", key).strip()
+
+
+# Libellés qui ne sont pas des noms de communes : pays, modes de travail,
+# départements et régions donnés en guise de ville ("Ardennes", "Haut-Rhin").
+_PAS_UNE_COMMUNE = {_cle_ville(x) for x in _NON_VILLES}
+_PAS_UNE_COMMUNE |= {_cle_ville(nom) for nom, _ in DEPARTEMENTS.values()}
+_PAS_UNE_COMMUNE |= {_cle_ville(region) for _, region in DEPARTEMENTS.values()}
+
+
+def _correspond(city: str, name: str) -> bool:
+    """La commune trouvée est-elle bien celle demandée ?
+
+    L'API Adresse ne répond jamais "introuvable" : elle renvoie son meilleur
+    candidat, aussi lointain soit-il ("Val-de-Marne" -> Val-des-Marais). On
+    n'accepte que si les deux libellés se recouvrent par un bout ("Paris 15e"
+    -> "Paris", "Cherbourg" -> "Cherbourg-en-Cotentin") ou ne diffèrent que
+    d'une faute de frappe.
+    """
+    a, b = _cle_ville(city), _cle_ville(name)
+    if not a or not b:
+        return False
+    if a.startswith(b) or a.endswith(b):
+        return True
+    # Un pays ou un département ne devient pas la commune qui le porte en suffixe
+    # ("France" -> Fort-de-France, "Ardennes" -> Saint-Grégoire-d'Ardennes) ; une
+    # commune homonyme (Paris) a déjà été acceptée ci-dessus par égalité.
+    if a in _PAS_UNE_COMMUNE:
+        return False
+    if b.startswith(a) or b.endswith(a):
+        return True
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.82
+
+
+def _geocode_city(session, city: str, dept: str = "") -> dict | None:
+    """Retourne {lat, lon, dept, name} pour une ville, ou None si introuvable.
+
+    dept : département déjà connu de l'offre, quand la source le fournit. L'API
+    classe ses candidats par population et non par proximité : sans ce filtre,
+    "Saint-Denis" renvoie celui de La Réunion pour une offre du 93.
+    """
     try:
         resp = session.get(
             ADRESSE_URL,
-            params={"q": city, "type": "municipality", "limit": 1},
+            params={"q": city, "type": "municipality", "limit": 10},
             timeout=15,
         )
         resp.raise_for_status()
         features = resp.json().get("features", [])
     except Exception:  # noqa: BLE001 - le géocodage est un enrichissement optionnel
         return None
-    if not features:
-        return None
-    feature = features[0]
-    lon, lat = feature["geometry"]["coordinates"]
-    citycode = feature["properties"].get("citycode", "")
-    dept = citycode[:3] if citycode.startswith("97") else citycode[:2]
-    return {"lat": round(lat, 5), "lon": round(lon, 5), "dept": dept}
+    # Un code postal seul n'a rien à voir avec le nom renvoyé : on lui fait confiance.
+    verifier_le_nom = not _CODE_POSTAL.match(city.strip())
+    for feature in features:
+        name = feature["properties"].get("name", "")
+        if verifier_le_nom and not _correspond(city, name):
+            continue
+        citycode = feature["properties"].get("citycode", "")
+        trouve = citycode[:3] if citycode.startswith("97") else citycode[:2]
+        if dept and trouve != dept:
+            continue  # homonyme dans un autre département
+        lon, lat = feature["geometry"]["coordinates"]
+        return {"lat": round(lat, 5), "lon": round(lon, 5), "dept": trouve, "name": name}
+    return None
 
 
 # Boîtes englobantes France métropolitaine + DOM, pour invalider les géolocs aberrantes.
@@ -141,6 +241,7 @@ def enrich_geo(jobs: list[dict]) -> None:
     """Complète en place departement/region/lat/lon des offres.
 
     - Invalide les lat/lon hors de France (géoloc source mal alignée), re-géocodés ensuite.
+    - Écarte les libellés de lieu qui ne désignent pas une commune (pays, région, "Remote").
     - Résout les codes département depuis les noms (WTTJ) ou codes (FT).
     - Déduit la région depuis le département.
     - Géocode les villes sans lat/lon (cache persistant).
@@ -153,18 +254,24 @@ def enrich_geo(jobs: list[dict]) -> None:
         if job["lat"] is not None and job["lon"] is not None and not _in_france(job["lat"], job["lon"]):
             job["lat"] = job["lon"] = None
 
+        # "France", "Île-de-France, France", "France - Remote" ne sont pas des villes :
+        # les géocoder produisait des offres remote piquées à Fort-de-France.
+        job["ville"] = clean_city(job["ville"])
+
         if job["departement"]:
             job["departement"] = departement_code(job["departement"])
 
         needs_geocode = (job["lat"] is None or job["lon"] is None) and job["ville"]
         needs_dept = not job["departement"] and job["ville"]
         if needs_geocode or needs_dept:
-            # Clé de cache : ville seule (les homonymes ambigus restent rares
-            # et l'API renvoie la commune la plus peuplée, acceptable ici).
+            # Clé de cache : ville + département connu, qui départage les homonymes
+            # (Saint-Denis 93 et 974 ne donnent pas le même point).
             key = norm_text(job["ville"])
             if key and len(key) > 1:
+                if job["departement"]:
+                    key = f"{key}|{job['departement']}"
                 if key not in cache:
-                    cache[key] = _geocode_city(session, job["ville"])
+                    cache[key] = _geocode_city(session, job["ville"], job["departement"])
                     cache_dirty = True
                     time.sleep(0.05)
                 hit = cache.get(key)
@@ -173,6 +280,11 @@ def enrich_geo(jobs: list[dict]) -> None:
                         job["lat"], job["lon"] = hit["lat"], hit["lon"]
                     if not job["departement"]:
                         job["departement"] = hit["dept"]
+                elif not job["departement"] and departement_code(job["ville"]):
+                    # Pas une commune mais un département ("Ardennes") : on garde
+                    # le code, sans prétendre connaître la ville.
+                    job["departement"] = departement_code(job["ville"])
+                    job["ville"] = ""
 
         if not job["region"] or job["departement"]:
             region = region_of(job["departement"])

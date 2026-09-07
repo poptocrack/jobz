@@ -40,9 +40,13 @@ def _convert(raw: dict) -> dict:
         contrat = normalize_contract(raw.get("title", ""))
     location = raw.get("location") or {}
     area = location.get("area") or []
-    # area = ["France", "Région", "Département", "Ville"...]
+    # area = ["France", "Région", "Département", "Agglomération"..., "Commune"]
+    # Tronqué à gauche quand Adzuna ne connaît que le pays : ["France"] pour une
+    # offre full remote. display_name n'est que ce même area recollé, jamais une
+    # ville de plus : le prendre en secours donnait "France" comme ville.
     region = area[1] if len(area) > 1 else ""
-    ville = area[-1] if len(area) > 2 else location.get("display_name", "")
+    departement = area[2] if len(area) > 2 else ""
+    ville = area[-1] if len(area) > 3 else ""
     description = raw.get("description") or ""
 
     return make_job(
@@ -52,6 +56,7 @@ def _convert(raw: dict) -> dict:
         entreprise=(raw.get("company") or {}).get("display_name", ""),
         url=raw.get("redirect_url", ""),
         ville=ville,
+        departement=departement,
         region=region,
         lat=raw.get("latitude"),
         lon=raw.get("longitude"),
